@@ -29,6 +29,12 @@ Tune the call to `run_simulation_with_policies(...)` in `run_policy_simulation.p
 - `policy_distribution` (see `POLICY_CONFIGS` in the same file)
 - `output_file_prefix` (affects filenames)
 
+## Run Calibration
+
+Run the calibration script with this command (to do this the real world data sets are necessary).
+````bash
+python calibrate.py
+````
 
 ## Agent Policies (in `reputation-environment/agent_policies.py`)
 

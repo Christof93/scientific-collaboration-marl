@@ -310,13 +310,6 @@ def sensitivity_analysis(problem):
 
 
 def calibrate(problem, real_data):
-    # Bounds: adjust for your parameter ranges
-    # np.random.seed(42)
-    # grid_props = generate_proportions(step=0.2)
-    # rand_props = np.random.dirichlet([1, 1, 1], size=20).tolist()
-    # candidates = [tuple(prop) for prop in rand_props + grid_props]
-    # np.random.shuffle(candidates)
-    # print(candidates)
     names = problem["names"]
     bounds = problem["bounds"]
     if len(names) == 6:
@@ -539,6 +532,7 @@ def main():
             [0, 1],  # Boolean → treat as 0/1
         ],
     }
+    sensitivity_analysis(sweep_1_problem)
     sweep_2_problem = {
         "num_vars": 3,
         "names": [
@@ -552,7 +546,6 @@ def main():
             [50, 500],  # Integer
         ],
     }
-    # sensitivity_analysis(problem)
     real_data = {
         "papers_per_author": np.load("papers_per_author.npy"),
         "authors_per_paper": np.load("authors_per_paper.npy"),
