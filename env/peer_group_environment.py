@@ -105,7 +105,6 @@ class PeerGroupEnvironment(ParallelEnv):
         self.distances = []
         self.global_density = 1
         self.project_templates: List[Dict[str, Any]] = [
-            # low novelty, low effort, low prestige
             {
                 "required_effort": 20,
                 "prestige": 0.5,
@@ -194,8 +193,9 @@ class PeerGroupEnvironment(ParallelEnv):
         return None
 
     def _generate_projects(self) -> None:
-        self.open_projects = self.project_templates.copy()
-        for i, project in enumerate(self.open_projects):
+        self.open_projects = []
+        for i in range(self.n_projects_per_step):
+            project = np.random.choice(self.project_templates).copy()
             project["required_effort"] = max(
                 1, int(np.random.gumbel(project["required_effort"], 10))
             )
@@ -213,6 +213,7 @@ class PeerGroupEnvironment(ParallelEnv):
             project["contributors"] = []
             project["start_time"] = 0
             project["finished"] = False
+            self.open_projects.append(project)
 
     def _get_active_projects(self, agent: int) -> List[str]:
         return [p for p in self.agent_active_projects[agent] if p is not None]
@@ -841,6 +842,9 @@ class PeerGroupEnvironment(ParallelEnv):
             if self.timestep % (1 // (self.growth_rate - each_step)) == 0:
                 group = np.random.choice(range(self.n_groups))
                 agents_activated_in_step.append(self._activate_agent(group))
+
+        # regenerate open projects
+        self._generate_projects()
 
         # if len(agents_activated_in_step) > 0:
         #     print(
