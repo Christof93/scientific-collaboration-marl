@@ -197,7 +197,7 @@ class PeerGroupEnvironment(ParallelEnv):
         for i in range(self.n_projects_per_step):
             project = np.random.choice(self.project_templates).copy()
             project["required_effort"] = max(
-                1, int(np.random.gumbel(project["required_effort"], 10))
+                1, int(np.random.gumbel(project["required_effort"], 8))
             )
             project["prestige"] = np.clip(
                 np.random.normal(project["prestige"], 0.15), 0.1, 1
@@ -738,21 +738,37 @@ class PeerGroupEnvironment(ParallelEnv):
                 quality, threshold=self.acceptance_threshold, noise_factor=0.2
             )
 
-            if reward > 0 and distances is not None:
-                new_distances.append(distances)
-                # update hindex
-                for citedp in p.citations:
-                    for c in self.projects[citedp].contributors:
-                        self.agent_h_indexes[c] = self.h_index(c)
+            if reward > 0:
+                if distances is not None:
+                    new_distances.append(distances)
+                    # update hindex
+                    for citedp in p.citations:
+                        for c in self.projects[citedp].contributors:
+                            self.agent_h_indexes[c] = self.h_index(c)
 
-            if self.reward_function_name == "multiply":
-                self._distribute_rewards_multiply(p, reward)
-            elif self.reward_function_name == "evenly":
-                self._distribute_rewards_evenly(p, reward)
-            elif self.reward_function_name == "by_effort":
-                self._distribute_rewards_by_effort(p, reward)
+                if self.reward_function_name == "multiply":
+                    self._distribute_rewards_multiply(p, reward)
+                elif self.reward_function_name == "evenly":
+                    self._distribute_rewards_evenly(p, reward)
+                elif self.reward_function_name == "by_effort":
+                    self._distribute_rewards_by_effort(p, reward)
 
-            p.finished = True
+                p.finished = True
+            else:
+                # Not accepted. Chance to continue effort with lower prestige.
+                if np.random.rand() < 0.5:
+                    p.prestige *= np.random.uniform(0.5, 0.9)
+                    # Extend the time window by a random fraction of the required effort
+                    p.time_window += max(5, int(p.required_effort * np.random.uniform(0.3, 0.8)))
+                else:
+                    if self.reward_function_name == "multiply":
+                        self._distribute_rewards_multiply(p, reward)
+                    elif self.reward_function_name == "evenly":
+                        self._distribute_rewards_evenly(p, reward)
+                    elif self.reward_function_name == "by_effort":
+                        self._distribute_rewards_by_effort(p, reward)
+
+                    p.finished = True
 
         new_projects = [p for p in due_projects if p.final_reward > 0]
         if len(new_projects) > 0:
