@@ -47,12 +47,6 @@ class PeerGroupEnvironment(ParallelEnv):
         self.n_projects_per_step: int = n_projects_per_step
         self.max_projects_per_agent: int = max_projects_per_agent
         self.max_agent_age: int = max_agent_age
-        self.age_distribution = GaussianMixture(
-            weights=[0.5, 0.5],
-            mus=[52, self.max_agent_age],
-            sds=[52, self.max_agent_age / 4],
-            rng=np.random,
-        )
         self.reward_function_name = reward_mode
         self.max_rewardless_steps: int = max_rewardless_steps
         self.growth_rate: float = growth_rate
@@ -68,7 +62,7 @@ class PeerGroupEnvironment(ParallelEnv):
         self._peer_groups_changed: bool = False
         self.timestep: int = 0
         self.agent_steps = np.zeros(self.n_agents, dtype=np.int32)
-        self.agent_ages = self.age_distribution.sample(self.n_agents)
+        self.agent_ages = np.random.gumbel(loc=65, scale=155, size=self.n_agents)
         self.rewardless_steps = np.zeros(self.n_agents, dtype=np.int32)
         self.agent_rewards = np.zeros(
             (self.n_agents, self.n_steps + 1), dtype=np.float32
@@ -243,7 +237,7 @@ class PeerGroupEnvironment(ParallelEnv):
         # Reset state variables
         self.timestep = 0
         self.agent_steps = np.zeros(self.n_agents, dtype=np.int32)
-        self.agent_ages = self.age_distribution.sample(self.n_agents)
+        self.agent_ages = np.random.gumbel(loc=65, scale=155, size=self.n_agents)
         self.rewardless_steps = np.zeros(self.n_agents, dtype=np.int32)
         self.agent_h_indexes = np.zeros(self.n_agents, dtype=np.int16)    
         self.agent_rewards = np.zeros(
@@ -811,16 +805,14 @@ class PeerGroupEnvironment(ParallelEnv):
                 continue
 
             # Probability of termination becomes higher nearing the max value
-            rewardless_dist = self.rewardless_steps[idx] - self.max_rewardless_steps
-            age_dist = self.agent_steps[idx] - self.agent_ages[idx]
             rewardless_prob = sigmoid(
-                rewardless_dist,
-                midpoint=self.max_rewardless_steps * 0.5,
+                self.rewardless_steps[idx],
+                midpoint=self.max_rewardless_steps,
                 sharpness=1 / (self.max_rewardless_steps * 0.0625),
             )
             age_prob = sigmoid(
-                age_dist,
-                midpoint=self.agent_ages[idx] * 0.5,
+                self.agent_steps[idx],
+                midpoint=self.agent_ages[idx],
                 # TODO: set this sharpness as parameter?
                 sharpness=1 / (self.agent_ages[idx] * 0.0625),
             )
