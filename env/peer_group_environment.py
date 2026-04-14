@@ -482,18 +482,18 @@ class PeerGroupEnvironment(ParallelEnv):
             return new_kene
 
         n_cited = min(len(projects_in_vicinity), np.random.randint(10, 21))
-        n_citations_vicinity = np.array(
-            [len(self.projects[p].citations) + 1 for p in projects_in_vicinity]
-        ).sum()
-        sv_exp = np.exp(
-            [self.projects[p].societal_value_score for p in projects_in_vicinity]
-        )
-        societal_value_vicinity_probs = sv_exp / sv_exp.sum()
-        citation_popularity = [
-            0.6 * ((len(self.projects[p].citations) + 1) / n_citations_vicinity)
-            + 0.4 * psv
-            for p, psv in zip(projects_in_vicinity, societal_value_vicinity_probs)
+        
+        # Multiplicative preferential attachment using citations, societal value, and quality
+        unnormalized_probs = [
+            (len(self.projects[p].citations) + 1) 
+            * np.exp(self.projects[p].societal_value_score) 
+            * np.exp(self.projects[p].quality_score)
+            for p in projects_in_vicinity
         ]
+        prob_sum = sum(unnormalized_probs)
+        citation_popularity = [p / prob_sum for p in unnormalized_probs]
+        print(citation_popularity)
+
         # weighted by n citations?
         cited_projects = np.random.choice(
             projects_in_vicinity, n_cited, p=citation_popularity

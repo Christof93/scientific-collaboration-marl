@@ -111,7 +111,8 @@ class Project:
 
     def calculate_reward(self, quality, threshold=0.5, noise_factor=0.15) -> float:
         if quality > threshold * self.prestige:
-            self.final_reward = self.prestige + np.random.normal(0, noise_factor)
+            reward_multiplier = max(0.1, 1.0 + self.societal_value_score)
+            self.final_reward = (self.prestige * reward_multiplier) + np.random.normal(0, noise_factor)
         else:
             self.final_reward = 0
         return self.final_reward
