@@ -3,7 +3,6 @@ from collections import defaultdict
 
 import matplotlib.pyplot as plt
 import numpy as np
-from neo4j import GraphDatabase
 from run_policy_simulation import run_simulation_with_policies
 from SALib.analyze import sobol as sobol_analyze
 from SALib.sample import sobol as sobol_sample
@@ -12,12 +11,6 @@ from scipy.stats import wasserstein_distance
 from skopt import gp_minimize  # Bayesian optimization
 from skopt.space import Categorical, Integer, Real
 
-# --- Neo4j connection setup ---
-URI = "bolt://localhost:7690"  # adjust if using neo4j+s:// for Aura
-USER = "neo4j"
-PASSWORD = "openreview"
-
-driver = GraphDatabase.driver(URI, auth=(USER, PASSWORD))
 
 
 def truncate_right_tail(data, quantile=0.99, max_value=None):
@@ -32,7 +25,7 @@ def truncate_right_tail(data, quantile=0.99, max_value=None):
     return data[data <= cutoff]
 
 
-def get_collaborators_per_author_or():
+def get_collaborators_per_author_or(driver):
     # --- Query for coauthors ---
     # This query collects coauthors for a given author
     COAUTHOR_QUERY = """
@@ -50,7 +43,7 @@ def get_collaborators_per_author_or():
     return coauthor_dict
 
 
-def mean_yoy_growth_rate_or():
+def mean_yoy_growth_rate_or(driver):
     QUERY = """
         MATCH (p:Paper)-[:_HAS_AUTHOR]->(a:Author),
             (p)-[:_IS_SUBMITTED_TO]->(c:Conference {name: "ICLR"})
@@ -80,13 +73,14 @@ def mean_yoy_growth_rate_or():
 
 
 def get_review_scores_or(
+    driver,
     confs=[
         "ICLR.cc_2018",
         "ICLR.cc_2020",
         "ICLR.cc_2021",
         "ICLR.cc_2022",
         "ICLR.cc_2023",
-    ]
+    ],
 ):
     score_query = """
         MATCH (p:Paper)-[:_IS_SUBMITTED_TO]->(c:Conference {{id: "{0}"}})
@@ -105,13 +99,14 @@ def get_review_scores_or(
 
 
 def get_acceptance_rates_or(
+    driver,
     confs=[
         "ICLR.cc_2018",
         "ICLR.cc_2020",
         "ICLR.cc_2021",
         "ICLR.cc_2022",
         "ICLR.cc_2023",
-    ]
+    ],
 ):
     score_query = """
         MATCH (p:Paper)-[:_IS_SUBMITTED_TO]->(c:Conference {{id: "{0}"}})
@@ -150,6 +145,25 @@ def get_author_lifespans_openalex(authors):
     lifespans = []
     for author in authors:
         years = [int(entry.get("year")) for entry in author.get("counts_by_year", [])]
+        if years:  # make sure author has data
+            lifespan = max(years) - min(years) + 1
+        else:
+            lifespan = 0
+        lifespans.append(lifespan)
+    return lifespans
+
+def get_papers_per_author_orcid(authors):
+    totals = []
+    for author in authors:
+        total_works = author.get("orcid_works_count", 0)
+        totals.append(total_works)
+    return totals
+
+
+def get_author_lifespans_orcid(authors):
+    lifespans = []
+    for author in authors:
+        years = [int(entry.get("year")) for entry in author.get("counts_by_year", []) if entry.get("year") is not None and 1700<entry.get("year")<2030]
         if years:  # make sure author has data
             lifespan = max(years) - min(years) + 1
         else:
@@ -209,6 +223,13 @@ def build_stats(projects):
 
 
 def save_real_world_data():
+    from neo4j import GraphDatabase
+    # --- Neo4j connection setup ---
+    URI = "bolt://localhost:7690"  # adjust if using neo4j+s:// for Aura
+    USER = "neo4j"
+    PASSWORD = "openreview"
+
+    driver = GraphDatabase.driver(URI, auth=(USER, PASSWORD))
     with open("../data/target_corpus_meta_info.json", "r") as f:
         papers = json.load(f)
     papers = np.random.choice(list(papers.values()), 10_000, replace=False)
@@ -220,8 +241,8 @@ def save_real_world_data():
     np.save("author_lifespan.npy", np.array(get_author_lifespans_openalex(authors)))
     np.save("papers_per_author.npy", np.array(get_papers_per_author_openalex(authors)))
     np.save("authors_per_paper.npy", np.array(get_authors_per_paper_openalex(papers)))
-    np.save("acceptance.npy", np.array(get_review_scores_or()))
-    np.save("quality.npy", np.array(get_acceptance_rates_or()))
+    np.save("acceptance.npy", np.array(get_review_scores_or(driver=driver)))
+    np.save("quality.npy", np.array(get_acceptance_rates_or(driver=driver)))
 
 
 def generate_proportions(step=0.1):
@@ -241,7 +262,7 @@ def sensitivity_analysis(problem):
 
     # --- Step 3: Run simulation and collect outputs ---
     def run_model(params):
-        acceptance, novelty, prestige, effort, rewardless, group_align = params
+        acceptance, novelty, prestige, effort, rewardless = params
         try:
             sim_run = run_simulation_with_policies(
                 n_agents=400,
@@ -256,7 +277,7 @@ def sensitivity_analysis(problem):
                     "mass_producer": 1 / 3,
                 },
                 output_file_prefix="sensitivity",
-                group_policy_homogenous=group_align,
+                group_policy_homogenous=False,
                 acceptance_threshold=acceptance,
                 novelty_threshold=novelty,
                 prestige_threshold=prestige,
@@ -312,14 +333,14 @@ def sensitivity_analysis(problem):
 def calibrate(problem, real_data):
     names = problem["names"]
     bounds = problem["bounds"]
-    if len(names) == 6:
+    if len(names) == 5:
         param_space = [
             Real(*bounds[0], name=names[0]),
             Real(*bounds[1], name=names[1]),
             Real(*bounds[2], name=names[2]),
             Integer(*bounds[3], name=names[3]),
             Integer(*bounds[4], name=names[4]),
-            Categorical(bounds[5], name=names[5]),  # Boolean
+            # Categorical(bounds[5], name=names[5]),  # Boolean
             # Categorical(candidates, name="policy_population_proportions"),
         ]
     else:
@@ -333,7 +354,7 @@ def calibrate(problem, real_data):
     def loss(theta):
         print(list(zip(names, theta)))
         try:
-            if len(names) == 6:
+            if len(names) == 5:
                 sim_run = run_simulation_with_policies(
                     n_agents=2_000,
                     # n_agents=600,
@@ -353,9 +374,7 @@ def calibrate(problem, real_data):
                     },
                     output_file_prefix="calibration",
                     # group_policy_homogenous = 0,
-                    group_policy_homogenous=bool(
-                        theta[names.index("policy_aligned_in_group")]
-                    ),
+                    group_policy_homogenous = 0,
                     # acceptance_threshold=theta[0],
                     acceptance_threshold=theta[names.index("acceptance_threshold")],
                     # novelty_threshold = 0.4,
@@ -511,17 +530,30 @@ def plot_calibration_overlays(
         plt.savefig(outfile, dpi=300)
     plt.show()
 
+def save_real_world_data_only_orcid():
+    # with open("../Conference-Simulation/data/target_corpus_meta_info.json", "r") as f:
+    #     papers = json.load(f)
+    # papers = np.random.choice(list(papers.values()), 10_000, replace=False)
+    with open("../Conference-Simulation/data/orcid_validation_results.json", "r") as f:
+        authors = json.load(f)
+
+    # print(f"Sampled {len(papers)} papers")
+    print(f"Loaded {len(authors)} authors")
+    np.save("author_lifespan.npy", np.array(get_author_lifespans_orcid(authors)))
+    np.save("papers_per_author.npy", np.array(get_papers_per_author_orcid(authors)))
+    # np.save("authors_per_paper.npy", np.array(get_authors_per_paper_openalex(papers)))
+    # np.save("acceptance.npy", np.array(get_review_scores_or()))
+    # np.save("quality.npy", np.array(get_acceptance_rates_or()))
 
 def main():
     sweep_1_problem = {
-        "num_vars": 6,
+        "num_vars": 5,
         "names": [
             "acceptance_threshold",
             "orthodox_novelty_threshold",
             "careerist_prestige_threshold",
             "mass_producer_effort_threshold",
             "max_rewardless_steps",
-            "policy_aligned_in_group",
         ],
         "bounds": [
             [0.2, 0.8],  # Real
@@ -529,23 +561,22 @@ def main():
             [0.2, 0.8],  # Real
             [10, 50],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
-            [0, 1],  # Boolean → treat as 0/1
         ],
     }
-    sensitivity_analysis(sweep_1_problem)
-    sweep_2_problem = {
-        "num_vars": 3,
-        "names": [
-            "acceptance_threshold",
-            "mass_producer_effort_threshold",
-            "max_rewardless_steps",
-        ],
-        "bounds": [
-            [0.2, 0.8],  # Real
-            [10, 50],  # Integer (approx. continuous for SA)
-            [50, 500],  # Integer
-        ],
-    }
+    # sensitivity_analysis(sweep_1_problem)
+    # sweep_2_problem = {
+    #     "num_vars": 3,
+    #     "names": [
+    #         "acceptance_threshold",
+    #         "mass_producer_effort_threshold",
+    #         "max_rewardless_steps",
+    #     ],
+    #     "bounds": [
+    #         [0.2, 0.8],  # Real
+    #         [10, 50],  # Integer (approx. continuous for SA)
+    #         [50, 500],  # Integer
+    #     ],
+    # }
     real_data = {
         "papers_per_author": np.load("papers_per_author.npy"),
         "authors_per_paper": np.load("authors_per_paper.npy"),
@@ -554,7 +585,7 @@ def main():
         "acceptance": np.load("acceptance_histogram.npy"),
     }
 
-    calibrate(sweep_2_problem, real_data)
+    calibrate(sweep_1_problem, real_data)
 
 
 if __name__ == "__main__":
