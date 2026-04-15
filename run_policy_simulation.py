@@ -283,27 +283,27 @@ def run_all_reward_functions(seeds=range(10)):
 
 if __name__ == "__main__":
     # Run a single simulation with balanced policies
-    # run_simulation_with_policies(
-    #     n_agents=2000,
-    #     start_agents=200,
-    #     max_steps=600,
-    #     n_groups=20,
-    #     max_peer_group_size=100,
-    #     max_rewardless_steps=50,
-    #     policy_distribution={
-    #         "careerist": 1 / 3,
-    #         "orthodox_scientist": 1 / 3,
-    #         "mass_producer": 1 / 3,
-    #     },
-    #     output_file_prefix="balanced_multiply_seed42",
-    #     group_policy_homogenous=False,
-    #     acceptance_threshold=0.44,
-    #     novelty_threshold=0.4,
-    #     prestige_threshold=0.4,
-    #     effort_threshold=38,
-    #     seed=42,
-    #     reward_function="multiply",
-    # )
+    run_simulation_with_policies(
+        n_agents=2000,
+        start_agents=200,
+        max_steps=600,
+        n_groups=20,
+        max_peer_group_size=100,
+        max_rewardless_steps=64,
+        policy_distribution={
+            "careerist": 1 / 3,
+            "orthodox_scientist": 1 / 3,
+            "mass_producer": 1 / 3,
+        },
+        output_file_prefix="balanced_multiply_seed42",
+        group_policy_homogenous=False,
+        acceptance_threshold=0.65,
+        novelty_threshold=0.45,
+        prestige_threshold=0.32,
+        effort_threshold=33,
+        seed=42,
+        reward_function="multiply",
+    )
 
     # uncomment to run simulation for all three reward function on 10 random seeds each (~10-15h)
-    run_all_reward_functions()
+    # run_all_reward_functions()

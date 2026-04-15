@@ -113,7 +113,7 @@ class PeerGroupEnvironment(ParallelEnv):
         for i in range(n_gaussians):
             value = 1.0 if i % 2 == 0 else -1.0
             self.area.add_gaussian_area(
-                *self.area.random_gaussian_point(), sigma=0.05, value=value
+                *self.area.random_gaussian_point(), sigma=0.1, value=value
             )
 
     def _init_peer_groups(self) -> None:
@@ -492,7 +492,6 @@ class PeerGroupEnvironment(ParallelEnv):
         ]
         prob_sum = sum(unnormalized_probs)
         citation_popularity = [p / prob_sum for p in unnormalized_probs]
-        print(citation_popularity)
 
         # weighted by n citations?
         cited_projects = np.random.choice(
