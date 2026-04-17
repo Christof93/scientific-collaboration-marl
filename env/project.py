@@ -58,8 +58,11 @@ class Project:
         return False
 
     def add_effort(self, effort: float) -> None:
-        """Add effort to the project."""
-        self.current_effort += effort
+        """Add effort to the project, discounted by coordination overhead."""
+        # Apply Brooks's Law: overhead increases with group size
+        coordination_discount = 1.0 + 0.2 * max(0, len(self.contributors) - 1)
+        effective_effort = effort / coordination_discount
+        self.current_effort += effective_effort
 
     def get_completion_progress(self) -> float:
         """Get the completion progress as a percentage."""

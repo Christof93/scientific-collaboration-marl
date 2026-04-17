@@ -492,14 +492,6 @@ class PeerGroupEnvironment(ParallelEnv):
         ]
         prob_sum = sum(unnormalized_probs)
         citation_popularity = [p / prob_sum for p in unnormalized_probs]
-        # quality_scores = np.array([self.projects[p].quality_score for p in projects_in_vicinity])
-        # # Normalize by the sum (with a fallback to avoid division by zero)
-        # total = quality_scores.sum()
-        # if total > 0:
-        #     citation_popularity = quality_scores / total
-        # else:
-        #     # Fallback to uniform distribution if all scores are 0
-        #     citation_popularity = np.ones(len(quality_scores)) / len(quality_scores)
         # weighted by n citations?
         cited_projects = np.random.choice(
             projects_in_vicinity, n_cited, p=citation_popularity
@@ -529,7 +521,7 @@ class PeerGroupEnvironment(ParallelEnv):
             (self.area.ylim[0] - self.area.ylim[1]) ** 2
             + (self.area.xlim[0] - self.area.xlim[1]) ** 2
         )
-        return 1 - (np.linalg.norm(project.kene - agent_centroid) / max_dist)
+        return 1 - (np.linalg.norm(project.kene - agent_centroid) / (max_dist / 2))
 
     def _update_distances(self, distances_to_previous, distances_between):
         if len(self.distances) > 0:
