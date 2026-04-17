@@ -197,7 +197,7 @@ class PeerGroupEnvironment(ParallelEnv):
                 np.random.normal(project["prestige"], 0.15), 0.1, 1
             )
             project["novelty"] = np.clip(
-                np.random.gumbel(project["novelty"], 0.05), 0.1, 1
+                np.random.gumbel(project["novelty"], 0.15), 0.1, 1
             )
 
             project["time_window"] = np.ceil(
@@ -483,16 +483,23 @@ class PeerGroupEnvironment(ParallelEnv):
 
         n_cited = min(len(projects_in_vicinity), np.random.randint(10, 21))
         
-        # Multiplicative preferential attachment using citations, societal value, and quality
+        # Multiplicative citation probability: log-dampened citations * fitness
         unnormalized_probs = [
-            (len(self.projects[p].citations) + 1) 
+            np.log(len(self.projects[p].citations) + 2) 
             * np.exp(self.projects[p].societal_value_score) 
             * np.exp(self.projects[p].quality_score)
             for p in projects_in_vicinity
         ]
         prob_sum = sum(unnormalized_probs)
         citation_popularity = [p / prob_sum for p in unnormalized_probs]
-
+        # quality_scores = np.array([self.projects[p].quality_score for p in projects_in_vicinity])
+        # # Normalize by the sum (with a fallback to avoid division by zero)
+        # total = quality_scores.sum()
+        # if total > 0:
+        #     citation_popularity = quality_scores / total
+        # else:
+        #     # Fallback to uniform distribution if all scores are 0
+        #     citation_popularity = np.ones(len(quality_scores)) / len(quality_scores)
         # weighted by n citations?
         cited_projects = np.random.choice(
             projects_in_vicinity, n_cited, p=citation_popularity
@@ -503,7 +510,7 @@ class PeerGroupEnvironment(ParallelEnv):
             cited_project.cited_by.append(new_project.project_id)
             cited_position = cited_project.kene
             m += np.random.uniform(0, 0.1)
-            new_kene += (new_kene - cited_position) * (1 - m) / 2
+            new_kene += (cited_position - new_kene) * (1 - m) / 2
         new_project.citations = cited_projects
         new_kene = np.tanh(new_kene)
         return new_kene
