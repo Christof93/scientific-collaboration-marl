@@ -47,9 +47,9 @@ class PeerGroupEnvironment(ParallelEnv):
         self.max_peer_group_size: int = max_peer_group_size
         self.n_projects_per_step: int = n_projects_per_step
         self.max_projects_per_agent: int = max_projects_per_agent
-        self.max_agent_age: int = max_agent_age
+        self.max_agent_age: int = int(max_agent_age)
         self.reward_function_name = reward_mode
-        self.max_rewardless_steps: int = max_rewardless_steps
+        self.max_rewardless_steps: int = int(max_rewardless_steps)
         self.growth_rate: float = growth_rate
         self.acceptance_threshold: float = acceptance_threshold
         self.coordination_factor: float = coordination_factor
