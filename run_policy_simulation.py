@@ -262,7 +262,7 @@ def run_all_reward_functions(seeds=range(10)):
                 max_steps=600,
                 n_groups=20,
                 max_peer_group_size=100,
-                max_rewardless_steps=64,
+                max_rewardless_steps=50,
                 policy_distribution={
                     "careerist": 1 / 3,
                     "orthodox_scientist": 1 / 3,
@@ -270,10 +270,10 @@ def run_all_reward_functions(seeds=range(10)):
                 },
                 output_file_prefix=f"balanced_{reward_fn}_seed{seed}",
                 group_policy_homogenous=False,
-                acceptance_threshold=0.65,
-                novelty_threshold=0.45,
-                prestige_threshold=0.32,
-                effort_threshold=33,
+                acceptance_threshold=0.8,
+                novelty_threshold=0.2,
+                prestige_threshold=0.8,
+                effort_threshold=28,
                 seed=seed,
                 reward_function=reward_fn,
             )
@@ -289,7 +289,7 @@ if __name__ == "__main__":
         max_steps=600,
         n_groups=20,
         max_peer_group_size=100,
-        max_rewardless_steps=64,
+        max_rewardless_steps=50,
         policy_distribution={
             "careerist": 1 / 3,
             "orthodox_scientist": 1 / 3,
@@ -297,11 +297,10 @@ if __name__ == "__main__":
         },
         output_file_prefix="balanced_multiply_seed42",
         group_policy_homogenous=False,
-        acceptance_threshold=0.65,
-        novelty_threshold=0.45,
-        prestige_threshold=0.32,
-        effort_threshold=33,
-        seed=42,
+        acceptance_threshold=0.8,
+        novelty_threshold=0.2,
+        prestige_threshold=0.8,
+        effort_threshold=28,
         reward_function="multiply",
     )
 
