@@ -36,6 +36,7 @@ class PeerGroupEnvironment(ParallelEnv):
         max_rewardless_steps: int = 50,
         growth_rate: float = 0.04,
         acceptance_threshold: float = 0.5,
+        coordination_factor: float = 0.2,
         reward_mode: str = "multiply",
         render_mode: Optional[str] = None,
     ) -> None:
@@ -51,6 +52,7 @@ class PeerGroupEnvironment(ParallelEnv):
         self.max_rewardless_steps: int = max_rewardless_steps
         self.growth_rate: float = growth_rate
         self.acceptance_threshold: float = acceptance_threshold
+        self.coordination_factor: float = coordination_factor
         self.render_mode: Optional[str] = render_mode
 
         self.possible_agents: List[str] = [f"agent_{i}" for i in range(self.n_agents)]
@@ -402,6 +404,7 @@ class PeerGroupEnvironment(ParallelEnv):
         new_running_proj["start_time"] = self.timestep
         new_running_proj["contributors"] = contributors
         new_running_proj["peer_fit"] = {i: 0 for i in contributors}
+        new_running_proj["coordination_factor"] = self.coordination_factor
         for contributor in contributors:
             self._add_active_project(contributor, new_running_proj["id"])
             self.agent_project_effort[contributor][new_running_proj["id"]] = 0

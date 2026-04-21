@@ -262,7 +262,7 @@ def sensitivity_analysis(problem):
 
     # --- Step 3: Run simulation and collect outputs ---
     def run_model(params):
-        acceptance, novelty, prestige, effort, rewardless = params
+        acceptance, novelty, prestige, effort, rewardless, coordination = params
         try:
             sim_run = run_simulation_with_policies(
                 n_agents=400,
@@ -282,6 +282,7 @@ def sensitivity_analysis(problem):
                 novelty_threshold=novelty,
                 prestige_threshold=prestige,
                 effort_threshold=effort,
+                coordination_factor=coordination,
             )
         except Exception as e:
             print(e)
@@ -333,17 +334,16 @@ def sensitivity_analysis(problem):
 def calibrate(problem, real_data):
     names = problem["names"]
     bounds = problem["bounds"]
-    if len(names) == 5:
+    if len(names) == 6:
         param_space = [
             Real(*bounds[0], name=names[0]),
             Real(*bounds[1], name=names[1]),
             Real(*bounds[2], name=names[2]),
             Integer(*bounds[3], name=names[3]),
             Integer(*bounds[4], name=names[4]),
-            # Categorical(bounds[5], name=names[5]),  # Boolean
-            # Categorical(candidates, name="policy_population_proportions"),
+            Real(*bounds[5], name=names[5]),
         ]
-    else:
+    elif len(names) == 3:
         param_space = [
             Real(*bounds[0], name=names[0]),
             Integer(*bounds[1], name=names[1]),
@@ -354,7 +354,7 @@ def calibrate(problem, real_data):
     def loss(theta):
         print(list(zip(names, theta)))
         try:
-            if len(names) == 5:
+            if len(names) == 6:
                 sim_run = run_simulation_with_policies(
                     n_agents=2_000,
                     # n_agents=600,
@@ -387,6 +387,7 @@ def calibrate(problem, real_data):
                     effort_threshold=theta[
                         names.index("mass_producer_effort_threshold")
                     ],
+                    coordination_factor=theta[names.index("coordination_factor")],
                 )
             else:
                 sim_run = run_simulation_with_policies(
@@ -485,7 +486,7 @@ def calibrate(problem, real_data):
                 f"APP dist: {round(d2, 5)}, ",
                 f"LS dist: {round(d3, 5)}, ",
                 f"PQ dist: {round(d4, 5)}, ",
-                f"AR dist {round(d5, 5)}",
+                f"AR dist {round(d5, 5)}"
             )
         )
         return d1 + d2 + d3 + d4 + (d5 * 0.1)  # weighted sum possible
@@ -547,13 +548,14 @@ def save_real_world_data_only_orcid():
 
 def main():
     sweep_1_problem = {
-        "num_vars": 5,
+        "num_vars": 6,
         "names": [
             "acceptance_threshold",
             "orthodox_novelty_threshold",
             "careerist_prestige_threshold",
             "mass_producer_effort_threshold",
             "max_rewardless_steps",
+            "coordination_factor",
         ],
         "bounds": [
             [0.2, 0.8],  # Real
@@ -561,6 +563,7 @@ def main():
             [0.2, 0.8],  # Real
             [10, 50],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
+            [0.0, 1.0],  # Real
         ],
     }
     # sensitivity_analysis(sweep_1_problem)

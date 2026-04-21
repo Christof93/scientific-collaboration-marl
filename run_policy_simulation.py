@@ -68,6 +68,7 @@ def run_simulation_with_policies(
     effort_threshold: int = 22,
     seed=42,
     reward_function: str = "multiply",
+    coordination_factor: float = 0.2,
 ):
     """
     Run a simulation with different agent policies.
@@ -91,6 +92,7 @@ def run_simulation_with_policies(
         max_agent_age=750,
         max_rewardless_steps=max_rewardless_steps,
         acceptance_threshold=acceptance_threshold,
+        coordination_factor=coordination_factor,
         reward_mode=reward_function,
     )
     if group_policy_homogenous:

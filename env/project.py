@@ -15,6 +15,7 @@ class Project:
         prestige: float,
         time_window: int,
         peer_fit: np.ndarray,
+        coordination_factor: float = 0.2,
         **kwargs,
     ):
         self.project_id = project_id
@@ -22,6 +23,7 @@ class Project:
         self.prestige = prestige
         self.time_window = time_window
         self.peer_fit = peer_fit
+        self.coordination_factor = coordination_factor
         # Project state
         self.current_effort = 0
         self.contributors: List[int] = []
@@ -60,7 +62,7 @@ class Project:
     def add_effort(self, effort: float) -> None:
         """Add effort to the project, discounted by coordination overhead."""
         # Apply Brooks's Law: overhead increases with group size
-        coordination_discount = 1.0 + 0.2 * max(0, len(self.contributors) - 1)
+        coordination_discount = 1.0 + self.coordination_factor * max(0, len(self.contributors) - 1)
         effective_effort = effort / coordination_discount
         self.current_effort += effective_effort
 
@@ -147,13 +149,14 @@ class Project:
             "novelty_score": self.novelty_score,
             "societal_value_score": self.societal_value_score,
             "effort_score": self.effort_score,
+            "coordination_factor": self.coordination_factor,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Project":
         """Create a Project instance from a dictionary."""
         project = cls(
-            project_id=data["id"],
+            project_id=data["id"] if "id" in data else data["project_id"],
             required_effort=data["required_effort"],
             prestige=data["prestige"],
             time_window=data["time_window"],
@@ -162,6 +165,7 @@ class Project:
                 if isinstance(data["peer_fit"], list)
                 else data["peer_fit"]
             ),
+            coordination_factor=data.get("coordination_factor", 0.2),
         )
 
         # Restore state
