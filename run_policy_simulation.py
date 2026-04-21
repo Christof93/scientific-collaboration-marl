@@ -69,6 +69,7 @@ def run_simulation_with_policies(
     seed=42,
     reward_function: str = "multiply",
     coordination_factor: float = 0.2,
+    verbose: bool = True,
 ):
     """
     Run a simulation with different agent policies.
@@ -104,9 +105,10 @@ def run_simulation_with_policies(
         agent_policies = create_mixed_policy_population(
             n_agents, policy_distribution, seed=seed
         )
-    print(
-        f"Agent policy distribution: {dict(zip(*np.unique(agent_policies, return_counts=True)))}"
-    )
+    if verbose:
+        print(
+            f"Agent policy distribution: {dict(zip(*np.unique(agent_policies, return_counts=True)))}"
+        )
 
     # Initialize stats tracker
     stats = SimulationStats()
@@ -156,7 +158,7 @@ def run_simulation_with_policies(
         # if step > 500:
         #     active_agent_1 = list(env.active_agents).index(1)
         #     print(env.action_masks[f"agent_{active_agent_1}"])
-        if output_file_prefix not in ["sensitivity", "calibration"]:
+        if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
             log.log_observation(
                 {
                     a: obs if env.active_agents[env.agent_to_id[a]] == 1 else None
@@ -177,15 +179,16 @@ def run_simulation_with_policies(
         stats.update(env, observations, rewards, terminations, truncations)
 
         # Print progress
-        if step % 100 == 0:
+        if step % 100 == 0 and verbose:
             print(f"Step {step}: {stats.summary_line()}")
 
         # Check if all agents are done
         if all(terminations.values()):
-            print(f"Simulation ended at step {step}")
+            if verbose:
+                print(f"Simulation ended at step {step}")
             break
 
-    if output_file_prefix not in ["sensitivity", "calibration"]:
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
         env.area.save(f"log/{output_file_prefix}_area.pickle")
 
     log.log_projects(env.projects.values())
@@ -197,19 +200,20 @@ def run_simulation_with_policies(
         or {"careerist": 1 / 3, "orthodox_scientist": 1 / 3, "mass_producer": 1 / 3},
     }
 
-    if output_file_prefix not in ["sensitivity", "calibration"]:
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
         with open(output_file_prefix + "_summary.json", "w") as f:
             json.dump(results, f, indent=2)
 
-    print(f"\nFinal Results:")
-    print(f"Total Steps: {stats.total_steps}")
-    print(f"Finished Projects: {stats.finished_projects_count}")
-    print(f"Successful Projects: {stats.successful_projects_count}")
-    print(
-        f"Success Rate: {stats.successful_projects_count / max(stats.finished_projects_count, 1):.3f}"
-    )
-    print(f"Total Rewards: {stats.total_rewards_distributed:.2f}")
-
+    if verbose:
+        print(f"\nFinal Results:")
+        print(f"Total Steps: {stats.total_steps}")
+        print(f"Finished Projects: {stats.finished_projects_count}")
+        print(f"Successful Projects: {stats.successful_projects_count}")
+        print(
+            f"Success Rate: {stats.successful_projects_count / max(stats.finished_projects_count, 1):.3f}"
+        )
+        print(f"Total Rewards: {stats.total_rewards_distributed:.2f}")
+    results["projects"] = [p.to_dict() for p in env.projects.values()]
     return results
 
 

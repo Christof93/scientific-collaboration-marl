@@ -10,6 +10,8 @@ from scipy.stats import wasserstein_distance
 # from some_simulator import run_simulation  # your simulator function
 from skopt import gp_minimize  # Bayesian optimization
 from skopt.space import Categorical, Integer, Real
+from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
 
 
 
@@ -256,39 +258,35 @@ def generate_proportions(step=0.1):
     return proportions
 
 
-def sensitivity_analysis(problem):
-    # --- Step 2: Sample parameter combinations ---
-    param_values = sobol_sample.sample(problem, 64, calc_second_order=False)
-
-    # --- Step 3: Run simulation and collect outputs ---
-    def run_model(params):
-        acceptance, novelty, prestige, effort, rewardless, coordination = params
-        try:
-            sim_run = run_simulation_with_policies(
-                n_agents=400,
-                start_agents=100,
-                max_steps=400,
-                n_groups=10,
-                max_peer_group_size=100,
-                max_rewardless_steps=rewardless,
-                policy_distribution={
-                    "careerist": 1 / 3,
-                    "orthodox_scientist": 1 / 3,
-                    "mass_producer": 1 / 3,
-                },
-                output_file_prefix="sensitivity",
-                group_policy_homogenous=False,
-                acceptance_threshold=acceptance,
-                novelty_threshold=novelty,
-                prestige_threshold=prestige,
-                effort_threshold=effort,
-                coordination_factor=coordination,
-            )
-        except Exception as e:
-            print(e)
-            return [np.nan] * 5
-        with open("log/sensitivity_projects.json", "r") as f:
-            run_projects = json.load(f)
+# --- Step 2: Sample parameter combinations ---
+def run_model_parallel(args):
+    params, task_idx = args
+    # Use worker name (e.g., "SpawnPoolWorker-1") as a stable ID for the log file
+    worker_id = multiprocessing.current_process().name
+    acceptance, novelty, prestige, effort, rewardless, coordination = params
+    try:
+        sim_run = run_simulation_with_policies(
+            n_agents=400,
+            start_agents=100,
+            max_steps=400,
+            n_groups=10,
+            max_peer_group_size=100,
+            max_rewardless_steps=rewardless,
+            policy_distribution={
+                "careerist": 1 / 3,
+                "orthodox_scientist": 1 / 3,
+                "mass_producer": 1 / 3,
+            },
+            output_file_prefix=f"sensitivity_{worker_id}",
+            group_policy_homogenous=False,
+            acceptance_threshold=acceptance,
+            novelty_threshold=novelty,
+            prestige_threshold=prestige,
+            effort_threshold=effort,
+            coordination_factor=coordination,
+            verbose=False,
+        )
+        run_projects = sim_run["projects"]
         sim_data = build_stats(run_projects)
 
         # Outputs for sensitivity
@@ -299,12 +297,21 @@ def sensitivity_analysis(problem):
             float(np.nanmean(sim_data["quality"])),
             float(np.nanmean(sim_data["acceptance"])),
         ]
+    except Exception as e:
+        print(f"Error in task {task_idx} (Worker {worker_id}): {e}")
+        return [np.nan] * 5
 
+def sensitivity_analysis(problem):
+    # --- Step 2: Sample parameter combinations ---
+    param_values = sobol_sample.sample(problem, 64, calc_second_order=False)
+    
+    print(f"Starting Sensitivity Analysis with {len(param_values)} runs on parallel workers...")
+    
+    tasks = [(p, i) for i, p in enumerate(param_values)]
+    
     Y = []
-    for i, p in enumerate(param_values):
-        print(f"Sensitivity Analysis run {i+1}/{len(param_values)}")
-        outputs = run_model(p)
-        Y.append(outputs)
+    with ProcessPoolExecutor() as executor:
+        Y = list(executor.map(run_model_parallel, tasks))
 
     Y = np.array(Y)
     for i in range(Y.shape[0]):
@@ -566,7 +573,7 @@ def main():
             [0.0, 1.0],  # Real
         ],
     }
-    # sensitivity_analysis(sweep_1_problem)
+    sensitivity_analysis(sweep_1_problem)
     # sweep_2_problem = {
     #     "num_vars": 3,
     #     "names": [
@@ -580,15 +587,15 @@ def main():
     #         [50, 500],  # Integer
     #     ],
     # }
-    real_data = {
-        "papers_per_author": np.load("papers_per_author.npy"),
-        "authors_per_paper": np.load("authors_per_paper.npy"),
-        "lifespan": np.load("author_lifespan.npy"),
-        "quality": np.load("quality_histogram.npy"),
-        "acceptance": np.load("acceptance_histogram.npy"),
-    }
+    # real_data = {
+    #     "papers_per_author": np.load("papers_per_author.npy"),
+    #     "authors_per_paper": np.load("authors_per_paper.npy"),
+    #     "lifespan": np.load("author_lifespan.npy"),
+    #     "quality": np.load("quality_histogram.npy"),
+    #     "acceptance": np.load("acceptance_histogram.npy"),
+    # }
 
-    calibrate(sweep_1_problem, real_data)
+    # calibrate(sweep_1_problem, real_data)
 
 
 if __name__ == "__main__":
