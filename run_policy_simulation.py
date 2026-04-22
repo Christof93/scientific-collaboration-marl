@@ -119,7 +119,8 @@ def run_simulation_with_policies(
         f"{output_file_prefix}_observations.jsonl",
         f"{output_file_prefix}_projects.json",
     )
-    log.start()
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+        log.start()
 
     # Reset environment
     observations, infos = env.reset(seed=seed)
@@ -191,7 +192,8 @@ def run_simulation_with_policies(
     if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
         env.area.save(f"log/{output_file_prefix}_area.pickle")
 
-    log.log_projects(env.projects.values())
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+        log.log_projects(env.projects.values())
     # Save results
     results = {
         "final_stats": stats.to_dict(),

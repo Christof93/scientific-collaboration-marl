@@ -8,7 +8,7 @@ from SALib.analyze import sobol as sobol_analyze
 from SALib.sample import sobol as sobol_sample
 from scipy.stats import wasserstein_distance
 # from some_simulator import run_simulation  # your simulator function
-from skopt import gp_minimize  # Bayesian optimization
+from skopt import gp_minimize, Optimizer  # Bayesian optimization
 from skopt.space import Categorical, Integer, Real
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
@@ -357,108 +357,85 @@ def calibrate(problem, real_data):
             Integer(*bounds[2], name=names[2]),
         ]
 
-    # ---- Step 2–3: Define loss function ----
-    def loss(theta):
-        print(list(zip(names, theta)))
+    # ---- Step 2–3: Define worker function ----
+    def run_calibration_worker(args):
+        theta, names, real_data = args
+        worker_id = multiprocessing.current_process().name
+        print(f"Worker {worker_id} evaluating: {list(zip(names, theta))}")
         try:
             if len(names) == 6:
                 sim_run = run_simulation_with_policies(
                     n_agents=2_000,
-                    # n_agents=600,
                     start_agents=200,
-                    # start_agents=60,
                     max_steps=600,
-                    # max_steps=120,
                     n_groups=20,
-                    # n_groups=6,
                     max_peer_group_size=300,
-                    # max_rewardless_steps=theta[2],
                     max_rewardless_steps=theta[names.index("max_rewardless_steps")],
                     policy_distribution={
-                        "careerist": 1 / 3,  # theta[4][0],
-                        "orthodox_scientist": 1 / 3,  # theta[4][1],
-                        "mass_producer": 1 / 3,  # theta[4][2],
+                        "careerist": 1 / 3,
+                        "orthodox_scientist": 1 / 3,
+                        "mass_producer": 1 / 3,
                     },
-                    output_file_prefix="calibration",
-                    # group_policy_homogenous = 0,
-                    group_policy_homogenous = 0,
-                    # acceptance_threshold=theta[0],
+                    output_file_prefix=f"calibration_{worker_id}",
+                    group_policy_homogenous=0,
                     acceptance_threshold=theta[names.index("acceptance_threshold")],
-                    # novelty_threshold = 0.4,
                     novelty_threshold=theta[names.index("orthodox_novelty_threshold")],
-                    # prestige_threshold = 0.29,
-                    prestige_threshold=theta[
-                        names.index("careerist_prestige_threshold")
-                    ],
-                    # effort_threshold=theta[1],
-                    effort_threshold=theta[
-                        names.index("mass_producer_effort_threshold")
-                    ],
+                    prestige_threshold=theta[names.index("careerist_prestige_threshold")],
+                    effort_threshold=theta[names.index("mass_producer_effort_threshold")],
                     coordination_factor=theta[names.index("coordination_factor")],
+                    verbose=False,
                 )
             else:
                 sim_run = run_simulation_with_policies(
                     n_agents=2_000,
-                    # n_agents=600,
                     start_agents=200,
-                    # start_agents=60,
                     max_steps=600,
-                    # max_steps=120,
                     n_groups=20,
-                    # n_groups=6,
                     max_peer_group_size=300,
                     max_rewardless_steps=theta[2],
-                    # max_rewardless_steps=theta[names.index("max_rewardless_steps")],
                     policy_distribution={
-                        "careerist": 1 / 3,  # theta[4][0],
-                        "orthodox_scientist": 1 / 3,  # theta[4][1],
-                        "mass_producer": 1 / 3,  # theta[4][2],
+                        "careerist": 1 / 3,
+                        "orthodox_scientist": 1 / 3,
+                        "mass_producer": 1 / 3,
                     },
-                    output_file_prefix="calibration",
+                    output_file_prefix=f"calibration_{worker_id}",
                     group_policy_homogenous=0,
-                    # group_policy_homogenous = bool(
-                    #     theta[names.index("policy_aligned_in_group")]
-                    # ),
                     acceptance_threshold=theta[0],
-                    # acceptance_threshold=theta[names.index("acceptance_threshold")],
                     novelty_threshold=0.4,
-                    # novelty_threshold = theta[names.index("orthodox_novelty_threshold")],
                     prestige_threshold=0.4,
-                    # prestige_threshold = theta[names.index("careerist_prestige_threshold")],
                     effort_threshold=theta[1],
-                    # effort_threshold=theta[names.index("mass_producer_effort_threshold")],
+                    verbose=False,
                 )
         except Exception as e:
-            print(e)
+            print(f"Error in worker {worker_id}: {e}")
             return 1e6
 
-        with open("log/calibration_projects.json", "r") as f:
-            run_projects = json.load(f)
+        run_projects = sim_run["projects"]
         sim_data = build_stats(run_projects)
         n_bins_ppa = min(
             max(sim_data["papers_per_author"]), max(real_data["papers_per_author"])
-        )  # 200
+        )
         n_bins_ppa = 200 if n_bins_ppa < 200 else n_bins_ppa
         n_bins_app = min(
             max(sim_data["authors_per_paper"]), max(real_data["authors_per_paper"])
-        )  #
+        )
         n_bins_app = 5 if n_bins_app < 5 else n_bins_app
-        n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))  #
+        n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))
         n_bins_ls = 5 if n_bins_ls < 5 else n_bins_ls
-        n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))  #
+        n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))
         n_bins_q = 10 if n_bins_q < 10 else n_bins_q
-        # Extract histograms (same bins as real)
+        
         H_sim1 = np.histogram(sim_data["papers_per_author"], bins=n_bins_ppa)[0]
         H_sim2 = np.histogram(sim_data["authors_per_paper"], bins=n_bins_app)[0]
         H_sim3 = np.histogram(sim_data["lifespan"], bins=n_bins_ls)[0]
         H_sim4 = np.histogram(sim_data["quality"], bins=n_bins_q)[0]
-        # Normalize
+        
         H_sim1 = H_sim1 / H_sim1.sum()
         H_sim2 = H_sim2 / H_sim2.sum()
         H_sim3 = H_sim3 / H_sim3.sum()
         H_sim4 = H_sim4 / H_sim4.sum()
         sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
-        # Normalize real data histograms
+        
         H_real_papers_per_author = np.histogram(
             truncate_right_tail(real_data["papers_per_author"], max_value=n_bins_ppa),
             bins=n_bins_ppa,
@@ -473,34 +450,50 @@ def calibrate(problem, real_data):
         H_real_lifespan = np.histogram(real_data["lifespan"], bins=n_bins_ls)[0]
         H_real_quality = np.histogram(real_data["quality"], bins=n_bins_q)[0]
         real_acceptance_rate = real_data["acceptance"].mean()
-        H_real_papers_per_author = (
-            H_real_papers_per_author / H_real_papers_per_author.sum()
-        )
-        H_real_authors_per_paper = (
-            H_real_authors_per_paper / H_real_authors_per_paper.sum()
-        )
+        
+        H_real_papers_per_author = H_real_papers_per_author / H_real_papers_per_author.sum()
+        H_real_authors_per_paper = H_real_authors_per_paper / H_real_authors_per_paper.sum()
         H_real_lifespan = H_real_lifespan / H_real_lifespan.sum()
         H_real_quality = H_real_quality / H_real_quality.sum()
-        # Distances
+        
         d1 = wasserstein_distance(H_real_papers_per_author, H_sim1)
         d2 = wasserstein_distance(H_real_authors_per_paper, H_sim2)
         d3 = wasserstein_distance(H_real_lifespan, H_sim3)
         d4 = wasserstein_distance(H_real_quality, H_sim4)
         d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-        print(
-            (
-                f"PPA dist: {round(d1, 5)}, ",
-                f"APP dist: {round(d2, 5)}, ",
-                f"LS dist: {round(d3, 5)}, ",
-                f"PQ dist: {round(d4, 5)}, ",
-                f"AR dist {round(d5, 5)}"
-            )
-        )
-        return d1 + d2 + d3 + d4 + (d5 * 0.1)  # weighted sum possible
+        
+        loss_val = d1 + d2 + d3 + d4 + (d5 * 0.1)
+        print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
+        return loss_val
 
-    res = gp_minimize(loss, param_space, n_calls=50, random_state=42)
-    # res = gp_minimize(loss, param_space, n_calls=10, random_state=42)
-    print("Best parameters:", list(zip(names, res.x)))
+    # ---- Step 2–3: Define loss function ----
+    optimizer = Optimizer(
+        dimensions=param_space,
+        n_initial_points=20,
+        n_jobs=8,
+        random_state=42,
+        base_estimator='gp'
+    )
+    
+    n_calls = 100
+    n_workers = 40
+    # if n_workers is None or n_workers < 1:
+    #     n_workers = 4
+    n_batches = int(np.ceil(n_calls / n_workers))
+    
+    print(f"Starting parallel calibration: {n_batches} batches of {n_workers} workers.")
+    
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        for i in range(n_batches):
+            x = optimizer.ask(n_points=n_workers)
+            tasks = [(theta, names, real_data) for theta in x]
+            y = list(executor.map(run_calibration_worker, tasks))
+            optimizer.tell(x, y)
+            print(f"Batch {i+1}/{n_batches} complete. Current best loss: {min(optimizer.yi)}")
+            
+    best_idx = np.argmin(optimizer.yi)
+    print("Best parameters:", list(zip(names, optimizer.Xi[best_idx])))
+    print("Best loss:", optimizer.yi[best_idx])
 
 
 # --- Build normalized histograms with edges ---
