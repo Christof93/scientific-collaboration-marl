@@ -860,8 +860,8 @@ class PeerGroupEnvironment(ParallelEnv):
         #         f"Activated {len(agents_activated_in_step)} agents in step {self.timestep}"
         #     )
 
-        if not all([a is not None for a in agents_activated_in_step]):
-            print("No more agents to activate!")
+        # if not all([a is not None for a in agents_activated_in_step]):
+        #     print("No more agents to activate!")
         # Prepare next obs/mask
         observations = {}
         for agent in self.agents:
@@ -985,7 +985,7 @@ class PeerGroupEnvironment(ParallelEnv):
                     0, 1e4, (self.max_peer_group_size,), dtype=np.float32
                 ),
                 "peer_h_index": Box(
-                    0, 1e5, (self.max_peer_group_size,), dtype=np.int16
+                    0, 1e4, (self.max_peer_group_size,), dtype=np.int16
                 ),
                 "peer_centroids": Box(
                     -1, 1, (self.max_peer_group_size, 2), dtype=np.float64
