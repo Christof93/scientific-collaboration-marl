@@ -194,10 +194,17 @@ def run_simulation_with_policies(
 
     if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
         log.log_projects(env.projects.values())
+    # Calculate active agent populations
+    active_mask = env.active_agents.astype(bool)
+    active_policies = [agent_policies[i] for i, active in enumerate(active_mask) if active]
+    unique_pols, counts = np.unique(active_policies, return_counts=True)
+    active_populations = dict(zip(unique_pols, counts.tolist()))
+    print(active_populations)
     # Save results
     results = {
         "final_stats": stats.to_dict(),
         "agent_policies": agent_policies,
+        "policy_populations": active_populations,
         "policy_distribution": policy_distribution
         or {"careerist": 1 / 3, "orthodox_scientist": 1 / 3, "mass_producer": 1 / 3},
     }
@@ -281,9 +288,10 @@ def run_all_reward_functions(seeds=range(10)):
                 acceptance_threshold=0.8,
                 novelty_threshold=0.2,
                 prestige_threshold=0.8,
-                effort_threshold=28,
+                effort_threshold=24,
                 seed=seed,
                 reward_function=reward_fn,
+                coordination_factor=1.0,
             )
 
     print("All simulations completed.")
@@ -308,8 +316,9 @@ if __name__ == "__main__":
         acceptance_threshold=0.8,
         novelty_threshold=0.2,
         prestige_threshold=0.8,
-        effort_threshold=28,
+        effort_threshold=24,
         reward_function="multiply",
+        coordination_factor=1.0,
     )
 
     # uncomment to run simulation for all three reward function on 10 random seeds each (~10-15h)
