@@ -266,7 +266,7 @@ def run_model_parallel(args):
     acceptance, novelty, prestige, effort, rewardless, coordination = params
     try:
         sim_run = run_simulation_with_policies(
-            n_agents=400,
+            n_agents=600,
             start_agents=100,
             max_steps=400,
             n_groups=10,
@@ -310,7 +310,7 @@ def sensitivity_analysis(problem):
     tasks = [(p, i) for i, p in enumerate(param_values)]
     
     Y = []
-    with ProcessPoolExecutor() as executor:
+    with ProcessPoolExecutor(max_workers=40) as executor:
         Y = list(executor.map(run_model_parallel, tasks))
 
     Y = np.array(Y)
@@ -337,6 +337,121 @@ def sensitivity_analysis(problem):
             json.dump(results, f, indent=2)
         print(f"Saved sensitivity results for {output_name} → {out_file}")
 
+# ---- Step 2–3: Define worker function ----
+def run_calibration_worker(args):
+    theta, names, real_data = args
+    worker_id = multiprocessing.current_process().name
+    print(f"Worker {worker_id} evaluating: {list(zip(names, theta))}")
+    try:
+        if len(names) == 6:
+            sim_run = run_simulation_with_policies(
+                n_agents=2_000,
+                start_agents=200,
+                max_steps=600,
+                n_groups=20,
+                max_peer_group_size=100,
+                max_rewardless_steps=theta[names.index("max_rewardless_steps")],
+                policy_distribution={
+                    "careerist": 1 / 3,
+                    "orthodox_scientist": 1 / 3,
+                    "mass_producer": 1 / 3,
+                },
+                output_file_prefix=f"calibration_{worker_id}",
+                group_policy_homogenous=0,
+                acceptance_threshold=theta[names.index("acceptance_threshold")],
+                novelty_threshold=theta[names.index("orthodox_novelty_threshold")],
+                prestige_threshold=theta[names.index("careerist_prestige_threshold")],
+                effort_threshold=theta[names.index("mass_producer_effort_threshold")],
+                coordination_factor=theta[names.index("coordination_factor")],
+                verbose=False,
+            )
+        else:
+            sim_run = run_simulation_with_policies(
+                n_agents=2_000,
+                start_agents=200,
+                max_steps=600,
+                n_groups=20,
+                max_peer_group_size=100,
+                max_rewardless_steps=theta[2],
+                policy_distribution={
+                    "careerist": 1 / 3,
+                    "orthodox_scientist": 1 / 3,
+                    "mass_producer": 1 / 3,
+                },
+                output_file_prefix=f"calibration_{worker_id}",
+                group_policy_homogenous=0,
+                acceptance_threshold=theta[0],
+                novelty_threshold=0.4,
+                prestige_threshold=0.4,
+                effort_threshold=theta[1],
+                verbose=False,
+            )
+    except Exception as e:
+        print(f"Error in worker {worker_id}: {e}")
+        return 1e6
+    # Check constraints (no population should die out)
+    pps = sim_run.get("policy_populations", {})
+    required_policies = ["careerist", "orthodox_scientist", "mass_producer"]
+    for pol in required_policies:
+        if pps.get(pol, 0) == 0:
+            print(f"Worker {worker_id}: Population of {pol} went to zero! Applying penalty.")
+            return 1e6  # Large penalty
+    
+    run_projects = sim_run["projects"]
+    sim_data = build_stats(run_projects)
+    n_bins_ppa = min(
+        max(sim_data["papers_per_author"]), max(real_data["papers_per_author"])
+    )
+    n_bins_ppa = 200 if n_bins_ppa < 200 else n_bins_ppa
+    n_bins_app = min(
+        max(sim_data["authors_per_paper"]), max(real_data["authors_per_paper"])
+    )
+    n_bins_app = 5 if n_bins_app < 5 else n_bins_app
+    n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))
+    n_bins_ls = 5 if n_bins_ls < 5 else n_bins_ls
+    n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))
+    n_bins_q = 10 if n_bins_q < 10 else n_bins_q
+    
+    H_sim1 = np.histogram(sim_data["papers_per_author"], bins=n_bins_ppa)[0]
+    H_sim2 = np.histogram(sim_data["authors_per_paper"], bins=n_bins_app)[0]
+    H_sim3 = np.histogram(sim_data["lifespan"], bins=n_bins_ls)[0]
+    H_sim4 = np.histogram(sim_data["quality"], bins=n_bins_q)[0]
+    
+    H_sim1 = H_sim1 / H_sim1.sum()
+    H_sim2 = H_sim2 / H_sim2.sum()
+    H_sim3 = H_sim3 / H_sim3.sum()
+    H_sim4 = H_sim4 / H_sim4.sum()
+    sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
+    
+    H_real_papers_per_author = np.histogram(
+        truncate_right_tail(real_data["papers_per_author"], max_value=n_bins_ppa),
+        bins=n_bins_ppa,
+    )[0]
+    H_real_authors_per_paper = np.histogram(
+        truncate_right_tail(
+            real_data["authors_per_paper"][real_data["authors_per_paper"] > 0],
+            max_value=n_bins_app,
+        ),
+        bins=n_bins_app,
+    )[0]
+    H_real_lifespan = np.histogram(real_data["lifespan"], bins=n_bins_ls)[0]
+    H_real_quality = np.histogram(real_data["quality"], bins=n_bins_q)[0]
+    real_acceptance_rate = real_data["acceptance"].mean()
+    
+    H_real_papers_per_author = H_real_papers_per_author / H_real_papers_per_author.sum()
+    H_real_authors_per_paper = H_real_authors_per_paper / H_real_authors_per_paper.sum()
+    H_real_lifespan = H_real_lifespan / H_real_lifespan.sum()
+    H_real_quality = H_real_quality / H_real_quality.sum()
+    
+    d1 = wasserstein_distance(H_real_papers_per_author, H_sim1)
+    d2 = wasserstein_distance(H_real_authors_per_paper, H_sim2)
+    d3 = wasserstein_distance(H_real_lifespan, H_sim3)
+    d4 = wasserstein_distance(H_real_quality, H_sim4)
+    d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
+    
+    loss_val = d1 + d2 + d3 + d4 + (d5 * 0.1)
+    print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
+    return loss_val
 
 def calibrate(problem, real_data):
     names = problem["names"]
@@ -356,115 +471,6 @@ def calibrate(problem, real_data):
             Integer(*bounds[1], name=names[1]),
             Integer(*bounds[2], name=names[2]),
         ]
-
-    # ---- Step 2–3: Define worker function ----
-    def run_calibration_worker(args):
-        theta, names, real_data = args
-        worker_id = multiprocessing.current_process().name
-        print(f"Worker {worker_id} evaluating: {list(zip(names, theta))}")
-        try:
-            if len(names) == 6:
-                sim_run = run_simulation_with_policies(
-                    n_agents=2_000,
-                    start_agents=200,
-                    max_steps=600,
-                    n_groups=20,
-                    max_peer_group_size=300,
-                    max_rewardless_steps=theta[names.index("max_rewardless_steps")],
-                    policy_distribution={
-                        "careerist": 1 / 3,
-                        "orthodox_scientist": 1 / 3,
-                        "mass_producer": 1 / 3,
-                    },
-                    output_file_prefix=f"calibration_{worker_id}",
-                    group_policy_homogenous=0,
-                    acceptance_threshold=theta[names.index("acceptance_threshold")],
-                    novelty_threshold=theta[names.index("orthodox_novelty_threshold")],
-                    prestige_threshold=theta[names.index("careerist_prestige_threshold")],
-                    effort_threshold=theta[names.index("mass_producer_effort_threshold")],
-                    coordination_factor=theta[names.index("coordination_factor")],
-                    verbose=False,
-                )
-            else:
-                sim_run = run_simulation_with_policies(
-                    n_agents=2_000,
-                    start_agents=200,
-                    max_steps=600,
-                    n_groups=20,
-                    max_peer_group_size=300,
-                    max_rewardless_steps=theta[2],
-                    policy_distribution={
-                        "careerist": 1 / 3,
-                        "orthodox_scientist": 1 / 3,
-                        "mass_producer": 1 / 3,
-                    },
-                    output_file_prefix=f"calibration_{worker_id}",
-                    group_policy_homogenous=0,
-                    acceptance_threshold=theta[0],
-                    novelty_threshold=0.4,
-                    prestige_threshold=0.4,
-                    effort_threshold=theta[1],
-                    verbose=False,
-                )
-        except Exception as e:
-            print(f"Error in worker {worker_id}: {e}")
-            return 1e6
-
-        run_projects = sim_run["projects"]
-        sim_data = build_stats(run_projects)
-        n_bins_ppa = min(
-            max(sim_data["papers_per_author"]), max(real_data["papers_per_author"])
-        )
-        n_bins_ppa = 200 if n_bins_ppa < 200 else n_bins_ppa
-        n_bins_app = min(
-            max(sim_data["authors_per_paper"]), max(real_data["authors_per_paper"])
-        )
-        n_bins_app = 5 if n_bins_app < 5 else n_bins_app
-        n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))
-        n_bins_ls = 5 if n_bins_ls < 5 else n_bins_ls
-        n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))
-        n_bins_q = 10 if n_bins_q < 10 else n_bins_q
-        
-        H_sim1 = np.histogram(sim_data["papers_per_author"], bins=n_bins_ppa)[0]
-        H_sim2 = np.histogram(sim_data["authors_per_paper"], bins=n_bins_app)[0]
-        H_sim3 = np.histogram(sim_data["lifespan"], bins=n_bins_ls)[0]
-        H_sim4 = np.histogram(sim_data["quality"], bins=n_bins_q)[0]
-        
-        H_sim1 = H_sim1 / H_sim1.sum()
-        H_sim2 = H_sim2 / H_sim2.sum()
-        H_sim3 = H_sim3 / H_sim3.sum()
-        H_sim4 = H_sim4 / H_sim4.sum()
-        sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
-        
-        H_real_papers_per_author = np.histogram(
-            truncate_right_tail(real_data["papers_per_author"], max_value=n_bins_ppa),
-            bins=n_bins_ppa,
-        )[0]
-        H_real_authors_per_paper = np.histogram(
-            truncate_right_tail(
-                real_data["authors_per_paper"][real_data["authors_per_paper"] > 0],
-                max_value=n_bins_app,
-            ),
-            bins=n_bins_app,
-        )[0]
-        H_real_lifespan = np.histogram(real_data["lifespan"], bins=n_bins_ls)[0]
-        H_real_quality = np.histogram(real_data["quality"], bins=n_bins_q)[0]
-        real_acceptance_rate = real_data["acceptance"].mean()
-        
-        H_real_papers_per_author = H_real_papers_per_author / H_real_papers_per_author.sum()
-        H_real_authors_per_paper = H_real_authors_per_paper / H_real_authors_per_paper.sum()
-        H_real_lifespan = H_real_lifespan / H_real_lifespan.sum()
-        H_real_quality = H_real_quality / H_real_quality.sum()
-        
-        d1 = wasserstein_distance(H_real_papers_per_author, H_sim1)
-        d2 = wasserstein_distance(H_real_authors_per_paper, H_sim2)
-        d3 = wasserstein_distance(H_real_lifespan, H_sim3)
-        d4 = wasserstein_distance(H_real_quality, H_sim4)
-        d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-        
-        loss_val = d1 + d2 + d3 + d4 + (d5 * 0.1)
-        print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
-        return loss_val
 
     # ---- Step 2–3: Define loss function ----
     optimizer = Optimizer(
@@ -558,15 +564,15 @@ def main():
             "coordination_factor",
         ],
         "bounds": [
-            [0.2, 0.8],  # Real
-            [0.2, 0.8],  # Real
-            [0.2, 0.8],  # Real
+            [0.05, 0.95],  # Real
+            [0.4, 0.9],  # Real
+            [0.1, 0.6],  # Real
             [10, 50],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
             [0.0, 1.0],  # Real
         ],
     }
-    sensitivity_analysis(sweep_1_problem)
+    # sensitivity_analysis(sweep_1_problem)
     # sweep_2_problem = {
     #     "num_vars": 3,
     #     "names": [
@@ -580,15 +586,15 @@ def main():
     #         [50, 500],  # Integer
     #     ],
     # }
-    # real_data = {
-    #     "papers_per_author": np.load("papers_per_author.npy"),
-    #     "authors_per_paper": np.load("authors_per_paper.npy"),
-    #     "lifespan": np.load("author_lifespan.npy"),
-    #     "quality": np.load("quality_histogram.npy"),
-    #     "acceptance": np.load("acceptance_histogram.npy"),
-    # }
+    real_data = {
+        "papers_per_author": np.load("papers_per_author.npy"),
+        "authors_per_paper": np.load("authors_per_paper.npy"),
+        "lifespan": np.load("author_lifespan.npy"),
+        "quality": np.load("quality_histogram.npy"),
+        "acceptance": np.load("acceptance_histogram.npy"),
+    }
 
-    # calibrate(sweep_1_problem, real_data)
+    calibrate(sweep_1_problem, real_data)
 
 
 if __name__ == "__main__":
