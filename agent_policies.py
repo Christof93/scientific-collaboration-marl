@@ -226,7 +226,7 @@ def orthodox_scientist_policy(
 def mass_producer_policy(
     observation: Dict[str, Any],
     action_mask: Dict[str, np.ndarray],
-    effort_threshold: 22,
+    effort_threshold: int = 22,
     **kwargs,
 ) -> Dict[str, Any]:
 
@@ -235,7 +235,7 @@ def mass_producer_policy(
     choose_project_mask = action_mask.get("choose_project")
     if len(project_opportunities) > 0:
         opp = project_opportunities[0]
-        if opp.get("required_effort")[0] <= effort_threshold:
+        if opp is not None and opp.get("required_effort")[0] <= effort_threshold and _mask_allowed(choose_project_mask, 1):
             chosen_project = 1
         else:
             chosen_project = 0
