@@ -65,6 +65,7 @@ class Project:
         coordination_discount = 1.0 + self.coordination_factor * max(0, len(self.contributors) - 1)
         effective_effort = effort / coordination_discount
         self.current_effort += effective_effort
+        return effective_effort
 
     def get_completion_progress(self) -> float:
         """Get the completion progress as a percentage."""

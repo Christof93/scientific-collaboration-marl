@@ -14,6 +14,7 @@ from scipy.special import softmax
 from .area import Area
 from .project import Project
 from .utils import GaussianMixture, sigmoid
+from .rewards import RewardManager
 
 
 class PeerGroupEnvironment(ParallelEnv):
@@ -54,6 +55,7 @@ class PeerGroupEnvironment(ParallelEnv):
         self.acceptance_threshold: float = acceptance_threshold
         self.coordination_factor: float = coordination_factor
         self.render_mode: Optional[str] = render_mode
+        self.reward_manager = RewardManager(self)
 
         self.possible_agents: List[str] = [f"agent_{i}" for i in range(self.n_agents)]
         self.agent_to_id: Dict[str, int] = {
@@ -221,7 +223,7 @@ class PeerGroupEnvironment(ParallelEnv):
                 return i
         return -1
 
-    def _remove_active_project(self, agent: int, proj_id: str) -> None:
+    def remove_active_project(self, agent: int, proj_id: str) -> None:
         try:
             idx = self.agent_active_projects[agent].index(proj_id)
             self.agent_active_projects[agent][idx] = None
@@ -281,6 +283,7 @@ class PeerGroupEnvironment(ParallelEnv):
             self.action_masks[agent] = mask
             observations[agent] = {"observation": obs, "action_mask": mask}
         infos = {a: {} for a in self.agents}
+        self.reward_manager.reset()
         return observations, infos
 
     def _clear_space_cache(self) -> None:
@@ -538,40 +541,6 @@ class PeerGroupEnvironment(ParallelEnv):
             self.distances = np.array(distances_between)
         return self.distances
 
-    def _distribute_rewards_evenly(self, p, reward):
-        for idx in p.contributors:
-            self._remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.agent_successful_projects[idx].append(p.project_id)
-            self.agent_rewards[idx, self.timestep] += reward / len(p.contributors)
-            self.agent_completed_projects[idx] += 1
-            self.rewards[f"agent_{idx}"] += reward / len(p.contributors)
-
-    def _distribute_rewards_multiply(self, p, reward):
-        for idx in p.contributors:
-            self._remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.agent_successful_projects[idx].append(p.project_id)
-            self.agent_rewards[idx, self.timestep] += reward
-            self.agent_completed_projects[idx] += 1
-            self.rewards[f"agent_{idx}"] += reward
-
-    def _distribute_rewards_by_effort(self, p, reward):
-        max_effort = max(
-            [self.agent_project_effort[c][p.project_id] for c in p.contributors]
-        )
-        for idx in p.contributors:
-            effort = self.agent_project_effort[idx][p.project_id]
-            rel_effort = (
-                effort / max_effort if max_effort > 0 else 1 / len(p.contributors)
-            )
-            self._remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.agent_successful_projects[idx].append(p.project_id)
-            self.agent_rewards[idx, self.timestep] += reward * rel_effort
-            self.agent_completed_projects[idx] += 1
-            self.rewards[f"agent_{idx}"] += reward * rel_effort
-
     def h_index(self, a) -> float:
         cite_counts = []
         for p in self.agent_successful_projects[a]:
@@ -630,7 +599,7 @@ class PeerGroupEnvironment(ParallelEnv):
                     else:
                         effort_amount = 0
 
-                    self.projects[effort_project_id].add_effort(effort_amount)
+                    effort_amount = self.projects[effort_project_id].add_effort(effort_amount)
                     self.agent_project_effort[idx][effort_project_id] += effort_amount
                 else:
                     print(f"Couldn't find project: {selected_project}")
@@ -741,12 +710,7 @@ class PeerGroupEnvironment(ParallelEnv):
                         for c in self.projects[citedp].contributors:
                             self.agent_h_indexes[c] = self.h_index(c)
 
-                if self.reward_function_name == "multiply":
-                    self._distribute_rewards_multiply(p, reward)
-                elif self.reward_function_name == "evenly":
-                    self._distribute_rewards_evenly(p, reward)
-                elif self.reward_function_name == "by_effort":
-                    self._distribute_rewards_by_effort(p, reward)
+                self.reward_manager.distribute_project_reward(p, reward)
 
                 p.finished = True
             else:
@@ -756,12 +720,7 @@ class PeerGroupEnvironment(ParallelEnv):
                     # Extend the time window by a random fraction of the required effort
                     p.time_window += max(5, int(p.required_effort * np.random.uniform(0.3, 0.8)))
                 else:
-                    if self.reward_function_name == "multiply":
-                        self._distribute_rewards_multiply(p, reward)
-                    elif self.reward_function_name == "evenly":
-                        self._distribute_rewards_evenly(p, reward)
-                    elif self.reward_function_name == "by_effort":
-                        self._distribute_rewards_by_effort(p, reward)
+                    self.reward_manager.distribute_project_reward(p, reward)
 
                     p.finished = True
 
@@ -851,6 +810,8 @@ class PeerGroupEnvironment(ParallelEnv):
             if self.timestep % (1 // (self.growth_rate - each_step)) == 0:
                 group = np.random.choice(range(self.n_groups))
                 agents_activated_in_step.append(self._activate_agent(group))
+
+        self.reward_manager.apply_step_rewards()
 
         # regenerate open projects
         self._generate_projects()
