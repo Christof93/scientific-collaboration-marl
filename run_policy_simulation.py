@@ -3,6 +3,7 @@ Example script showing how to use the agent policies with the peer group environ
 """
 
 import json
+from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
 from agent_policies import (create_mixed_policy_population,
@@ -262,64 +263,82 @@ def compare_policy_performances():
         )
 
 
-def run_all_reward_functions(seeds=range(10)):
-    reward_functions = ["multiply", "evenly", "by_effort"]
-
-    for seed in seeds:
-        for reward_fn in reward_functions:
-            print(
-                f"Running simulation for reward function '{reward_fn}' with seed {seed}..."
-            )
-
-            run_simulation_with_policies(
-                n_agents=2000,
-                start_agents=200,
-                max_steps=600,
-                n_groups=20,
-                max_peer_group_size=100,
-                max_rewardless_steps=50,
-                policy_distribution={
-                    "careerist": 1 / 3,
-                    "orthodox_scientist": 1 / 3,
-                    "mass_producer": 1 / 3,
-                },
-                output_file_prefix=f"balanced_{reward_fn}_seed{seed}",
-                group_policy_homogenous=False,
-                acceptance_threshold=0.8,
-                novelty_threshold=0.4,
-                prestige_threshold=0.6,
-                effort_threshold=25,
-                seed=seed,
-                reward_function=reward_fn,
-                coordination_factor=1.0,
-            )
-
-    print("All simulations completed.")
-
-
-if __name__ == "__main__":
-    # Run a single simulation with balanced policies
+def run_simulation_worker(args):
+    """Worker function for parallel simulation runs."""
+    seed, reward_fn = args
+    print(f"--- Starting: {reward_fn} (seed {seed}) ---")
     run_simulation_with_policies(
         n_agents=2000,
         start_agents=200,
         max_steps=600,
         n_groups=20,
         max_peer_group_size=100,
-        max_rewardless_steps=61,
+        max_rewardless_steps=50,
         policy_distribution={
             "careerist": 1 / 3,
             "orthodox_scientist": 1 / 3,
             "mass_producer": 1 / 3,
         },
-        output_file_prefix="balanced_multiply_seed42",
+        output_file_prefix=f"balanced_{reward_fn}_seed{seed}",
         group_policy_homogenous=False,
-        acceptance_threshold=0.95,
-        novelty_threshold=0.67,
-        prestige_threshold=0.1,
-        effort_threshold=20,
-        reward_function="multiply",
+        acceptance_threshold=0.8,
+        novelty_threshold=0.4,
+        prestige_threshold=0.6,
+        effort_threshold=25,
+        seed=seed,
+        reward_function=reward_fn,
         coordination_factor=1.0,
+        verbose=False,  # Set to False for parallel execution
     )
+    print(f"--- Finished: {reward_fn} (seed {seed}) ---")
 
-    # uncomment to run simulation for all three reward function on 10 random seeds each (~10-15h)
-    # run_all_reward_functions()
+
+def run_all_reward_functions(seeds=range(10), n_workers=8):
+    """Run simulations for all reward functions in parallel."""
+    reward_functions = [
+        "multiply",
+        "evenly",
+        "by_effort",
+        #"publications",
+        #"h_index_diff",
+    ]
+
+    tasks = []<
+    for seed in seeds:
+        for reward_fn in reward_functions:
+            tasks.append((seed, reward_fn))
+
+    print(f"Starting parallel execution of {len(tasks)} simulations with {n_workers} workers...")
+
+    with ProcessPoolExecutor(max_workers=n_workers) as executor:
+        list(executor.map(run_simulation_worker, tasks))
+
+    print("All simulations completed.")
+
+
+if __name__ == "__main__":
+    # Choose between running a single simulation or the full batch
+    # run_simulation_with_policies(
+    #     n_agents=2000,
+    #     start_agents=200,
+    #     max_steps=600,
+    #     n_groups=20,
+    #     max_peer_group_size=100,
+    #     max_rewardless_steps=61,
+    #     policy_distribution={
+    #         "careerist": 1 / 3,
+    #         "orthodox_scientist": 1 / 3,
+    #         "mass_producer": 1 / 3,
+    #     },
+    #     output_file_prefix="balanced_multiply_seed42",
+    #     group_policy_homogenous=False,
+    #     acceptance_threshold=0.95,
+    #     novelty_threshold=0.67,
+    #     prestige_threshold=0.1,
+    #     effort_threshold=20,
+    #     reward_function="multiply",
+    #     coordination_factor=1.0,
+    # )
+
+    # Run simulation for all reward functions on random seeds in parallel
+    run_all_reward_functions(seeds=range(10), n_workers=8)
