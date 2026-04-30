@@ -303,7 +303,7 @@ def run_all_reward_functions(seeds=range(10), n_workers=8):
         #"h_index_diff",
     ]
 
-    tasks = []<
+    tasks = []
     for seed in seeds:
         for reward_fn in reward_functions:
             tasks.append((seed, reward_fn))
@@ -318,27 +318,27 @@ def run_all_reward_functions(seeds=range(10), n_workers=8):
 
 if __name__ == "__main__":
     # Choose between running a single simulation or the full batch
-    # run_simulation_with_policies(
-    #     n_agents=2000,
-    #     start_agents=200,
-    #     max_steps=600,
-    #     n_groups=20,
-    #     max_peer_group_size=100,
-    #     max_rewardless_steps=61,
-    #     policy_distribution={
-    #         "careerist": 1 / 3,
-    #         "orthodox_scientist": 1 / 3,
-    #         "mass_producer": 1 / 3,
-    #     },
-    #     output_file_prefix="balanced_multiply_seed42",
-    #     group_policy_homogenous=False,
-    #     acceptance_threshold=0.95,
-    #     novelty_threshold=0.67,
-    #     prestige_threshold=0.1,
-    #     effort_threshold=20,
-    #     reward_function="multiply",
-    #     coordination_factor=1.0,
-    # )
+    run_simulation_with_policies(
+        n_agents=2000,
+        start_agents=200,
+        max_steps=600,
+        n_groups=20,
+        max_peer_group_size=100,
+        max_rewardless_steps=61,
+        policy_distribution={
+            "careerist": 1 / 3,
+            "orthodox_scientist": 1 / 3,
+            "mass_producer": 1 / 3,
+        },
+        output_file_prefix="balanced_multiply_seed42",
+        group_policy_homogenous=False,
+        acceptance_threshold=0.95,
+        novelty_threshold=0.67,
+        prestige_threshold=0.1,
+        effort_threshold=20,
+        reward_function="multiply",
+        coordination_factor=1.0,
+    )
 
     # Run simulation for all reward functions on random seeds in parallel
-    run_all_reward_functions(seeds=range(10), n_workers=8)
+    # run_all_reward_functions(seeds=range(10), n_workers=8)
