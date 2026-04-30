@@ -580,29 +580,30 @@ class PeerGroupEnvironment(ParallelEnv):
                     agent_project_choices[idx] = open_proj_idx
 
             # Apply effort to running projects
+            selected_project = action["put_effort"] - 1
+            effort_project_id = self.agent_active_projects[idx][selected_project]
             if (
                 action["put_effort"] > 0
-                and len(self._get_active_projects(idx)) >= action["put_effort"]
+                and effort_project_id is not None
             ):
-
-                selected_project = action["put_effort"] - 1
-                effort_project_id = self.agent_active_projects[idx][selected_project]
-                if effort_project_id is not None:
-                    effort_project = self.projects[effort_project_id]
-                    contributors_idx = (
-                        list(effort_project.contributors).index(idx)
-                        if idx in effort_project.contributors
-                        else None
-                    )
-                    if contributors_idx is not None:
-                        effort_amount = effort_project.peer_fit[contributors_idx]
-                    else:
-                        effort_amount = 0
-
-                    effort_amount = self.projects[effort_project_id].add_effort(effort_amount)
-                    self.agent_project_effort[idx][effort_project_id] += effort_amount
+                effort_project = self.projects[effort_project_id]
+                contributors_idx = (
+                    list(effort_project.contributors).index(idx)
+                    if idx in effort_project.contributors
+                    else None
+                )
+                if contributors_idx is not None:
+                    effort_amount = effort_project.peer_fit[contributors_idx]
                 else:
-                    print(f"Couldn't find project: {selected_project}")
+                    effort_amount = 0
+
+                effort_amount = self.projects[effort_project_id].add_effort(effort_amount)
+                self.agent_project_effort[idx][effort_project_id] += effort_amount
+            elif (
+                action["put_effort"] > 0
+                and effort_project_id is None
+            ):
+                print(f"Couldn't put effort on project {effort_project_id} for agent {agent}.  Put effort action {action['put_effort']}")
         # Collaboration intents (for each agent, with their peers)
         for peer_group in self.peer_groups:
             peer_group = np.array((peer_group))
