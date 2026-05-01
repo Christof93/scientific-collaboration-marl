@@ -335,7 +335,7 @@ class PeerGroupEnvironment(ParallelEnv):
             mask["collaborate_with"][: len(peer_group)],  # else keep 0
         )
         if sum(mask["collaborate_with"]) == 0:
-            breakpoint()
+            print(f"{agent} can not collaborate!")
 
         # Effort: can only put effort into active projects
         mask["put_effort"] = np.zeros(self.max_projects_per_agent + 1, dtype=np.int8)
