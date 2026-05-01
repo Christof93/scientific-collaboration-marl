@@ -4,112 +4,102 @@ from typing import Dict, List, Any, Optional
 class RewardManager:
     """
     Manages reward distribution logic for the PeerGroupEnvironment.
-    Modularizes different reward mechanisms.
+    Decouples Reward Source (reputation, raw_pubcount, h_index) 
+    from Distribution Mode (multiply, evenly, by_effort).
     """
     def __init__(self, env):
         self.env = env
-        self.reward_function_name = env.reward_function_name
+        self.reward_type = env.reward_type
+        self.distribution_mode = env.distribution_mode
         self.prev_h_indexes = np.zeros(env.n_agents, dtype=np.int16)
 
     def reset(self):
         """Called during environment reset."""
         self.prev_h_indexes = self.env.agent_h_indexes.copy()
 
-    def distribute_project_reward(self, project: Any, reward: float):
+    def distribute_project_reward(self, project: Any, quality_reward: float):
         """
-        Distributes rewards when a project is completed (accepted or failed).
+        Calculates the base reward based on reward_type and distributes it 
+        according to distribution_mode.
         
         Args:
             project: The project object that was completed.
-            reward: The calculated reward based on project quality and threshold.
+            quality_reward: The calculated reward based on project quality and threshold.
         """
-        if self.reward_function_name == "multiply":
-            self._distribute_multiply(project, reward)
-        elif self.reward_function_name == "evenly":
-            self._distribute_evenly(project, reward)
-        elif self.reward_function_name == "by_effort":
-            self._distribute_by_effort(project, reward)
-        elif self.reward_function_name == "raw_pubcount":
-            self._distribute_raw_pubcount(project, reward)
-        elif self.reward_function_name == "h_index":
-            # Immediate project reward is handled via h-index delta in step_end
-            # But we still need to cleanup the project state
-            self._cleanup_project(project, reward)
+        # 1. Determine Base Reward
+        base_reward = 0.0
+        if self.reward_type == "reputation":
+            base_reward = quality_reward
+        elif self.reward_type == "raw_pubcount":
+            base_reward = 1.0 if quality_reward > 0 else 0.0
+        elif self.reward_type == "h_index":
+            # h_index rewards are handled in apply_step_rewards
+            base_reward = 0.0
+
+        # 2. Distribute Reward (if any)
+        if base_reward > 0:
+            self._apply_distribution(project, base_reward)
         else:
-            # Fallback/Default (multiply)
-            self._distribute_multiply(project, reward)
+            # Still need to cleanup state even if no reward
+            self._cleanup_project(project)
 
     def apply_step_rewards(self):
         """
         Applied at the end of every step to handle rewards based on step-over-step deltas.
-        Currently handles 'h_index'.
+        Used for 'h_index' reward type.
         """
-        if self.reward_function_name == "h_index":
-            # Reward is delta in h-index for ACTIVE agents
+        if self.reward_type == "h_index":
+            # Current implementation treats h-index delta as individual (multiply)
+            # as it's a personal career metric.
             current_h = self.env.agent_h_indexes
             delta = current_h - self.prev_h_indexes
             
             for i in range(self.env.n_agents):
-                # Only reward active agents
                 if self.env.active_agents[i] == 1 and delta[i] > 0:
                     reward_val = float(delta[i])
+                    # Note: We currently don't 'distribute' h-index deltas because 
+                    # they are not tied to a single project completion event in the manager.
+                    # If distribution modes are needed for h-index, we would need to 
+                    # track which citation caused which increase.
                     self.env.agent_rewards[i, self.env.timestep] += reward_val
                     self.env.rewards[f"agent_{i}"] += reward_val
             
-            # Update previous state for next step
             self.prev_h_indexes = current_h.copy()
 
-    def _cleanup_project(self, p, reward):
-        """Standard state update for finished projects without immediate reward distribution."""
+    def _cleanup_project(self, p):
+        """Standard state update for finished projects (cleanup only)."""
         for idx in p.contributors:
             self.env.remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.env.agent_successful_projects[idx].append(p.project_id)
+            # Even if no reward, we track completion
             self.env.agent_completed_projects[idx] += 1
 
-    def _distribute_multiply(self, p, reward):
-        """Each contributor gets the full project reward."""
+    def _apply_distribution(self, p, total_reward):
+        """Shared logic to distribute a total reward pool among project contributors."""
+        # Clean up slots first
         for idx in p.contributors:
             self.env.remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.env.agent_successful_projects[idx].append(p.project_id)
-                self.env.agent_rewards[idx, self.env.timestep] += reward
-                self.env.rewards[f"agent_{idx}"] += float(reward)
+            self.env.agent_successful_projects[idx].append(p.project_id)
             self.env.agent_completed_projects[idx] += 1
 
-    def _distribute_evenly(self, p, reward):
-        """Project reward is split evenly among contributors."""
-        n = len(p.contributors)
-        share = reward / n if n > 0 else 0
-        for idx in p.contributors:
-            self.env.remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.env.agent_successful_projects[idx].append(p.project_id)
+        # Apply distribution
+        if self.distribution_mode == "multiply":
+            for idx in p.contributors:
+                self.env.agent_rewards[idx, self.env.timestep] += total_reward
+                self.env.rewards[f"agent_{idx}"] += float(total_reward)
+
+        elif self.distribution_mode == "evenly":
+            n = len(p.contributors)
+            share = total_reward / n if n > 0 else 0
+            for idx in p.contributors:
                 self.env.agent_rewards[idx, self.env.timestep] += share
                 self.env.rewards[f"agent_{idx}"] += float(share)
-            self.env.agent_completed_projects[idx] += 1
 
-    def _distribute_by_effort(self, p, reward):
-        """Project reward is split proportionally to relative effort."""
-        efforts = [self.env.agent_project_effort[c][p.project_id] for c in p.contributors]
-        max_effort = max(efforts) if efforts else 0
-        for idx in p.contributors:
-            effort = self.env.agent_project_effort[idx][p.project_id]
-            rel_effort = (effort / max_effort if max_effort > 0 else 1 / len(p.contributors))
-            self.env.remove_active_project(idx, p.project_id)
-            if reward > 0:
-                self.env.agent_successful_projects[idx].append(p.project_id)
-                self.env.agent_rewards[idx, self.env.timestep] += reward * rel_effort
-                self.env.rewards[f"agent_{idx}"] += float(reward * rel_effort)
-            self.env.agent_completed_projects[idx] += 1
-
-    def _distribute_raw_pubcount(self, p, reward):
-        """Purely based on number of raw_pubcount. Each contributor gets 1 reward if accepted."""
-        for idx in p.contributors:
-            self.env.remove_active_project(idx, p.project_id)
-            if reward > 0:
-                pub_reward = 1.0
-                self.env.agent_successful_projects[idx].append(p.project_id)
-                self.env.agent_rewards[idx, self.env.timestep] += pub_reward
-                self.env.rewards[f"agent_{idx}"] += pub_reward
-            self.env.agent_completed_projects[idx] += 1
+        elif self.distribution_mode == "by_effort":
+            efforts = [self.env.agent_project_effort[c][p.project_id] for c in p.contributors]
+            total_effort = sum(efforts) if efforts else 0
+            for idx in p.contributors:
+                effort = self.env.agent_project_effort[idx][p.project_id]
+                rel_effort = (effort / total_effort if total_effort > 0 else 1 / len(p.contributors))
+                share = total_reward * rel_effort
+                self.env.agent_rewards[idx, self.env.timestep] += share
+                self.env.rewards[f"agent_{idx}"] += float(share)

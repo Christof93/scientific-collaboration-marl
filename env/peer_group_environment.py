@@ -38,7 +38,8 @@ class PeerGroupEnvironment(ParallelEnv):
         growth_rate: float = 0.04,
         acceptance_threshold: float = 0.5,
         coordination_factor: float = 0.2,
-        reward_mode: str = "multiply",
+        reward_type: str = "reputation",
+        distribution_mode: str = "multiply",
         render_mode: Optional[str] = None,
     ) -> None:
         self.n_agents: int = max_agents
@@ -49,7 +50,8 @@ class PeerGroupEnvironment(ParallelEnv):
         self.n_projects_per_step: int = n_projects_per_step
         self.max_projects_per_agent: int = max_projects_per_agent
         self.max_agent_age: int = int(max_agent_age)
-        self.reward_function_name = reward_mode
+        self.reward_type = reward_type
+        self.distribution_mode = distribution_mode
         self.max_rewardless_steps: int = int(max_rewardless_steps)
         self.growth_rate: float = growth_rate
         self.acceptance_threshold: float = acceptance_threshold
