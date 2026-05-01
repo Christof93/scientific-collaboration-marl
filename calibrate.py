@@ -372,7 +372,7 @@ def run_calibration_worker(args):
                 max_steps=600,
                 n_groups=20,
                 max_peer_group_size=100,
-                max_rewardless_steps=theta[2],
+                max_rewardless_steps=theta[names.index("max_rewardless_steps")],
                 policy_distribution={
                     "careerist": 1 / 3,
                     "orthodox_scientist": 1 / 3,
@@ -380,10 +380,11 @@ def run_calibration_worker(args):
                 },
                 output_file_prefix=f"calibration_{worker_id}",
                 group_policy_homogenous=0,
-                acceptance_threshold=theta[0],
-                novelty_threshold=0.4,
-                prestige_threshold=0.4,
-                effort_threshold=theta[1],
+                acceptance_threshold=0.95,
+                novelty_threshold=0.53,
+                prestige_threshold=0.6,
+                effort_threshold=theta[names.index("mass_producer_effort_threshold")],
+                coordination_factor=theta[names.index("coordination_factor")],
                 verbose=False,
             )
     except Exception as e:
@@ -481,7 +482,7 @@ def calibrate(problem, real_data):
         base_estimator='gp'
     )
     
-    n_calls = 100
+    n_calls = 200
     n_workers = 40
     # if n_workers is None or n_workers < 1:
     #     n_workers = 4
@@ -564,28 +565,28 @@ def main():
             "coordination_factor",
         ],
         "bounds": [
-            [0.05, 0.95],  # Real
-            [0.4, 0.9],  # Real
-            [0.1, 0.6],  # Real
+            [0.5, 1.5],  # Real
+            [0.2, 0.8],  # Real
+            [0.2, 0.8],  # Real
             [10, 50],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
-            [0.0, 1.0],  # Real
+            [0.0, 0.9],  # Real
         ],
     }
     # sensitivity_analysis(sweep_1_problem)
-    # sweep_2_problem = {
-    #     "num_vars": 3,
-    #     "names": [
-    #         "acceptance_threshold",
-    #         "mass_producer_effort_threshold",
-    #         "max_rewardless_steps",
-    #     ],
-    #     "bounds": [
-    #         [0.2, 0.8],  # Real
-    #         [10, 50],  # Integer (approx. continuous for SA)
-    #         [50, 500],  # Integer
-    #     ],
-    # }
+    sweep_2_problem = {
+        "num_vars": 3,
+        "names": [
+            "coordination_factor",
+            "mass_producer_effort_threshold",
+            "max_rewardless_steps",
+        ],
+        "bounds": [
+            [0.0, 1.0],  # Real
+            [10, 50],  # Integer (approx. continuous for SA)
+            [50, 500],  # Integer
+        ],
+    }
     real_data = {
         "papers_per_author": np.load("papers_per_author.npy"),
         "authors_per_paper": np.load("authors_per_paper.npy"),

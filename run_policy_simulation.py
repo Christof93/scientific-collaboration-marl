@@ -284,9 +284,9 @@ def run_simulation_worker(args):
         output_file_prefix=f"balanced_{reward_type}_{distribution_mode}_seed{seed}",
         group_policy_homogenous=False,
         acceptance_threshold=0.8,
-        novelty_threshold=0.4,
+        novelty_threshold=0.778,
         prestige_threshold=0.6,
-        effort_threshold=25,
+        effort_threshold=28,
         seed=seed,
         reward_type=reward_type,
         distribution_mode=distribution_mode,
@@ -323,7 +323,7 @@ if __name__ == "__main__":
         max_steps=600,
         n_groups=20,
         max_peer_group_size=100,
-        max_rewardless_steps=61,
+        max_rewardless_steps=55,
         policy_distribution={
             "careerist": 1 / 3,
             "orthodox_scientist": 1 / 3,
@@ -342,4 +342,4 @@ if __name__ == "__main__":
     )
 
     # Run simulation for all reward functions on random seeds in parallel
-    # run_all_reward_functions(seeds=range(10), n_workers=8)
+    run_all_reward_functions(seeds=range(10), n_workers=30)
