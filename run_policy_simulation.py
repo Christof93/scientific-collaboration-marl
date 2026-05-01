@@ -67,8 +67,9 @@ def run_simulation_with_policies(
     novelty_threshold: float = 0.8,
     prestige_threshold: float = 0.2,
     effort_threshold: int = 22,
-    seed=42,
-    reward_function: str = "multiply",
+    seed:int=42,
+    reward_type: str = "reputation",
+    distribution_mode: str = "multiply",
     coordination_factor: float = 0.2,
     verbose: bool = True,
 ):
@@ -95,7 +96,8 @@ def run_simulation_with_policies(
         max_rewardless_steps=max_rewardless_steps,
         acceptance_threshold=acceptance_threshold,
         coordination_factor=coordination_factor,
-        reward_mode=reward_function,
+        reward_type=reward_type,
+        distribution_mode=distribution_mode,
     )
     if group_policy_homogenous:
         # Create agent policy assignments
@@ -265,8 +267,8 @@ def compare_policy_performances():
 
 def run_simulation_worker(args):
     """Worker function for parallel simulation runs."""
-    seed, reward_fn = args
-    print(f"--- Starting: {reward_fn} (seed {seed}) ---")
+    seed, reward_type, distribution_mode = args
+    print(f"--- Starting: {reward_type}/{distribution_mode} (seed {seed}) ---")
     run_simulation_with_policies(
         n_agents=2000,
         start_agents=200,
@@ -279,34 +281,31 @@ def run_simulation_worker(args):
             "orthodox_scientist": 1 / 3,
             "mass_producer": 1 / 3,
         },
-        output_file_prefix=f"balanced_{reward_fn}_seed{seed}",
+        output_file_prefix=f"balanced_{reward_type}_{distribution_mode}_seed{seed}",
         group_policy_homogenous=False,
         acceptance_threshold=0.8,
         novelty_threshold=0.4,
         prestige_threshold=0.6,
         effort_threshold=25,
         seed=seed,
-        reward_function=reward_fn,
+        reward_type=reward_type,
+        distribution_mode=distribution_mode,
         coordination_factor=1.0,
         verbose=False,  # Set to False for parallel execution
     )
-    print(f"--- Finished: {reward_fn} (seed {seed}) ---")
+    print(f"--- Finished: {reward_type}/{distribution_mode} (seed {seed}) ---")
 
 
 def run_all_reward_functions(seeds=range(10), n_workers=8):
-    """Run simulations for all reward functions in parallel."""
-    reward_functions = [
-        "multiply",
-        "evenly",
-        "by_effort",
-        #"publications",
-        #"h_index_diff",
-    ]
+    """Run simulations for all combinations of reward types and distribution modes in parallel."""
+    reward_types = ["reputation", "raw_pubcount", "h_index"]
+    distribution_modes = ["multiply", "evenly", "by_effort"]
 
     tasks = []
     for seed in seeds:
-        for reward_fn in reward_functions:
-            tasks.append((seed, reward_fn))
+        for r_type in reward_types:
+            for d_mode in distribution_modes:
+                tasks.append((seed, r_type, d_mode))
 
     print(f"Starting parallel execution of {len(tasks)} simulations with {n_workers} workers...")
 
@@ -330,14 +329,16 @@ if __name__ == "__main__":
             "orthodox_scientist": 1 / 3,
             "mass_producer": 1 / 3,
         },
-        output_file_prefix="balanced_multiply_seed42",
+        output_file_prefix="balanced_reputationmultiply_seed42",
         group_policy_homogenous=False,
         acceptance_threshold=0.95,
         novelty_threshold=0.67,
         prestige_threshold=0.1,
         effort_threshold=20,
-        reward_function="multiply",
+        reward_type="reputation",
+        distribution_mode="multiply",
         coordination_factor=1.0,
+        seed=42,
     )
 
     # Run simulation for all reward functions on random seeds in parallel
