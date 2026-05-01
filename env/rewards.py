@@ -29,9 +29,9 @@ class RewardManager:
             self._distribute_evenly(project, reward)
         elif self.reward_function_name == "by_effort":
             self._distribute_by_effort(project, reward)
-        elif self.reward_function_name == "publications":
-            self._distribute_publications(project, reward)
-        elif self.reward_function_name == "h_index_diff":
+        elif self.reward_function_name == "raw_pubcount":
+            self._distribute_raw_pubcount(project, reward)
+        elif self.reward_function_name == "h_index":
             # Immediate project reward is handled via h-index delta in step_end
             # But we still need to cleanup the project state
             self._cleanup_project(project, reward)
@@ -42,15 +42,15 @@ class RewardManager:
     def apply_step_rewards(self):
         """
         Applied at the end of every step to handle rewards based on step-over-step deltas.
-        Currently handles 'h_index_diff'.
+        Currently handles 'h_index'.
         """
-        if self.reward_function_name == "h_index_diff":
+        if self.reward_function_name == "h_index":
             # Reward is delta in h-index for ACTIVE agents
             current_h = self.env.agent_h_indexes
             delta = current_h - self.prev_h_indexes
             
             for i in range(self.env.n_agents):
-                # Only reward active agents as per user requirement
+                # Only reward active agents
                 if self.env.active_agents[i] == 1 and delta[i] > 0:
                     reward_val = float(delta[i])
                     self.env.agent_rewards[i, self.env.timestep] += reward_val
@@ -103,8 +103,8 @@ class RewardManager:
                 self.env.rewards[f"agent_{idx}"] += float(reward * rel_effort)
             self.env.agent_completed_projects[idx] += 1
 
-    def _distribute_publications(self, p, reward):
-        """Purely based on number of publications. Each contributor gets 1 reward if accepted."""
+    def _distribute_raw_pubcount(self, p, reward):
+        """Purely based on number of raw_pubcount. Each contributor gets 1 reward if accepted."""
         for idx in p.contributors:
             self.env.remove_active_project(idx, p.project_id)
             if reward > 0:

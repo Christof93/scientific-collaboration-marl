@@ -603,7 +603,7 @@ class PeerGroupEnvironment(ParallelEnv):
                 action["put_effort"] > 0
                 and effort_project_id is None
             ):
-                print(f"Couldn't put effort on project {effort_project_id} for agent {agent}.  Put effort action {action['put_effort']}")
+                pass
         # Collaboration intents (for each agent, with their peers)
         for peer_group in self.peer_groups:
             peer_group = np.array((peer_group))
@@ -740,7 +740,13 @@ class PeerGroupEnvironment(ParallelEnv):
             max(0, self.timestep - self.max_rewardless_steps) : self.timestep,
         ]
         per_step_reward_mean = np.nanmean(in_window_rewards, axis=1)
-        cutoff = np.percentile(per_step_reward_mean, 25)
+        if len(per_step_reward_mean) > 0:
+            # Use nanpercentile to handle agents that have only NaN rewards in the window
+            cutoff = np.nanpercentile(per_step_reward_mean, 25)
+            if np.isnan(cutoff):
+                cutoff = 0
+        else:
+            cutoff = 0
         # Update agent ages, steps, rewardless steps
         active_idx = 0
         for idx, agent in enumerate(self.agents):
