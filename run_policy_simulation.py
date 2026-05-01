@@ -267,7 +267,7 @@ def compare_policy_performances():
 
 def run_simulation_worker(args):
     """Worker function for parallel simulation runs."""
-    seed, reward_type, distribution_mode = args
+    params, seed, reward_type, distribution_mode = args
     print(f"--- Starting: {reward_type}/{distribution_mode} (seed {seed}) ---")
     run_simulation_with_policies(
         n_agents=2000,
@@ -275,7 +275,6 @@ def run_simulation_worker(args):
         max_steps=600,
         n_groups=20,
         max_peer_group_size=100,
-        max_rewardless_steps=50,
         policy_distribution={
             "careerist": 1 / 3,
             "orthodox_scientist": 1 / 3,
@@ -283,10 +282,12 @@ def run_simulation_worker(args):
         },
         output_file_prefix=f"balanced_{reward_type}_{distribution_mode}_seed{seed}",
         group_policy_homogenous=False,
-        acceptance_threshold=0.8,
-        novelty_threshold=0.778,
-        prestige_threshold=0.6,
-        effort_threshold=28,
+        max_rewardless_steps=params["max_rewardless_steps"],
+        acceptance_threshold=params["acceptance_threshold"],
+        novelty_threshold=params["orthodox_novelty_threshold"],
+        prestige_threshold=params["careerist_prestige_threshold"],
+        effort_threshold=params["mass_producer_effort_threshold"],
+        coordination_factor=params["coordination_factor"],
         seed=seed,
         reward_type=reward_type,
         distribution_mode=distribution_mode,
@@ -296,7 +297,7 @@ def run_simulation_worker(args):
     print(f"--- Finished: {reward_type}/{distribution_mode} (seed {seed}) ---")
 
 
-def run_all_reward_functions(seeds=range(10), n_workers=8):
+def run_all_reward_functions(parameters, seeds=range(10), n_workers=8):
     """Run simulations for all combinations of reward types and distribution modes in parallel."""
     reward_types = ["reputation", "raw_pubcount", "h_index"]
     distribution_modes = ["multiply", "evenly", "by_effort"]
@@ -305,7 +306,7 @@ def run_all_reward_functions(seeds=range(10), n_workers=8):
     for seed in seeds:
         for r_type in reward_types:
             for d_mode in distribution_modes:
-                tasks.append((seed, r_type, d_mode))
+                tasks.append((parameters, seed, r_type, d_mode))
 
     print(f"Starting parallel execution of {len(tasks)} simulations with {n_workers} workers...")
 
@@ -316,6 +317,8 @@ def run_all_reward_functions(seeds=range(10), n_workers=8):
 
 
 if __name__ == "__main__":
+    CALIBRATED_PARAMS = [('acceptance_threshold', 0.838817246400205), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.8), ('mass_producer_effort_threshold', np.int64(31)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.9)]
+    cp = {k:v for k,v in CALIBRATED_PARAMS}
     # Choose between running a single simulation or the full batch
     run_simulation_with_policies(
         n_agents=2000,
@@ -323,7 +326,6 @@ if __name__ == "__main__":
         max_steps=600,
         n_groups=20,
         max_peer_group_size=100,
-        max_rewardless_steps=55,
         policy_distribution={
             "careerist": 1 / 3,
             "orthodox_scientist": 1 / 3,
@@ -331,15 +333,16 @@ if __name__ == "__main__":
         },
         output_file_prefix="balanced_reputationmultiply_seed42",
         group_policy_homogenous=False,
-        acceptance_threshold=0.95,
-        novelty_threshold=0.67,
-        prestige_threshold=0.1,
-        effort_threshold=20,
         reward_type="reputation",
         distribution_mode="multiply",
-        coordination_factor=1.0,
         seed=42,
+        max_rewardless_steps=cp["max_rewardless_steps"],
+        acceptance_threshold=cp["acceptance_threshold"],
+        novelty_threshold=cp["orthodox_novelty_threshold"],
+        prestige_threshold=cp["careerist_prestige_threshold"],
+        effort_threshold=cp["mass_producer_effort_threshold"],
+        coordination_factor=cp["coordination_factor"],
     )
 
     # Run simulation for all reward functions on random seeds in parallel
-    run_all_reward_functions(seeds=range(10), n_workers=30)
+    run_all_reward_functions(cp, seeds=range(10), n_workers=30)
