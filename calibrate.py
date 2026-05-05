@@ -358,6 +358,7 @@ def run_calibration_worker(args):
                 },
                 output_file_prefix=f"calibration_{worker_id}",
                 group_policy_homogenous=0,
+                reward_type="h_index",
                 acceptance_threshold=theta[names.index("acceptance_threshold")],
                 novelty_threshold=theta[names.index("orthodox_novelty_threshold")],
                 prestige_threshold=theta[names.index("careerist_prestige_threshold")],
@@ -454,7 +455,7 @@ def run_calibration_worker(args):
     print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
     return loss_val
 
-def calibrate(problem, real_data):
+def calibrate(problem, real_data, n_workers = 8, n_calls = 200):
     names = problem["names"]
     bounds = problem["bounds"]
     if len(names) == 6:
@@ -482,8 +483,6 @@ def calibrate(problem, real_data):
         base_estimator='gp'
     )
     
-    n_calls = 200
-    n_workers = 40
     # if n_workers is None or n_workers < 1:
     #     n_workers = 4
     n_batches = int(np.ceil(n_calls / n_workers))
@@ -595,7 +594,7 @@ def main():
         "acceptance": np.load("acceptance_histogram.npy"),
     }
 
-    calibrate(sweep_1_problem, real_data)
+    calibrate(sweep_1_problem, real_data, n_workers=40, n_calls=400)
 
 
 if __name__ == "__main__":
