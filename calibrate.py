@@ -197,8 +197,8 @@ def build_stats(projects):
     # collect info
     for proj in projects:
         start_time = proj.get("start_time")
-        if start_time < 100:
-            continue
+        # if start_time < 100:
+            # continue
         contributors = proj.get("contributors", [])
         authors_per_paper.append(len(contributors))
         quality_scores.append(proj.get("quality_score"))
@@ -401,56 +401,62 @@ def run_calibration_worker(args):
     
     run_projects = sim_run["projects"]
     sim_data = build_stats(run_projects)
-    n_bins_ppa = min(
-        max(sim_data["papers_per_author"]), max(real_data["papers_per_author"])
-    )
-    n_bins_ppa = 200 if n_bins_ppa < 200 else n_bins_ppa
-    n_bins_app = min(
-        max(sim_data["authors_per_paper"]), max(real_data["authors_per_paper"])
-    )
-    n_bins_app = 5 if n_bins_app < 5 else n_bins_app
-    n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))
-    n_bins_ls = 5 if n_bins_ls < 5 else n_bins_ls
-    n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))
-    n_bins_q = 10 if n_bins_q < 10 else n_bins_q
+    # n_bins_ppa = min(
+    #     max(sim_data["papers_per_author"]), max(real_data["papers_per_author"])
+    # )
+    # n_bins_ppa = 200 if n_bins_ppa < 200 else n_bins_ppa
+    # n_bins_app = min(
+    #     max(sim_data["authors_per_paper"]), max(real_data["authors_per_paper"])
+    # )
+    # n_bins_app = 5 if n_bins_app < 5 else n_bins_app
+    # n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))
+    # n_bins_ls = 5 if n_bins_ls < 5 else n_bins_ls
+    # n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))
+    # n_bins_q = 10 if n_bins_q < 10 else n_bins_q
     
-    H_sim1 = np.histogram(sim_data["papers_per_author"], bins=n_bins_ppa)[0]
-    H_sim2 = np.histogram(sim_data["authors_per_paper"], bins=n_bins_app)[0]
-    H_sim3 = np.histogram(sim_data["lifespan"], bins=n_bins_ls)[0]
-    H_sim4 = np.histogram(sim_data["quality"], bins=n_bins_q)[0]
+    # H_sim1 = np.histogram(sim_data["papers_per_author"], bins=n_bins_ppa)[0]
+    # H_sim2 = np.histogram(sim_data["authors_per_paper"], bins=n_bins_app)[0]
+    # H_sim3 = np.histogram(sim_data["lifespan"], bins=n_bins_ls)[0]
+    # H_sim4 = np.histogram(sim_data["quality"], bins=n_bins_q)[0]
     
-    H_sim1 = H_sim1 / H_sim1.sum()
-    H_sim2 = H_sim2 / H_sim2.sum()
-    H_sim3 = H_sim3 / H_sim3.sum()
-    H_sim4 = H_sim4 / H_sim4.sum()
+    # H_sim1 = H_sim1 / H_sim1.sum()
+    # H_sim2 = H_sim2 / H_sim2.sum()
+    # H_sim3 = H_sim3 / H_sim3.sum()
+    # H_sim4 = H_sim4 / H_sim4.sum()
+    # sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
+    
+    # H_real_papers_per_author = np.histogram(
+    #     truncate_right_tail(real_data["papers_per_author"], max_value=n_bins_ppa),
+    #     bins=n_bins_ppa,
+    # )[0]
+    # H_real_authors_per_paper = np.histogram(
+    #     truncate_right_tail(
+    #         real_data["authors_per_paper"][real_data["authors_per_paper"] > 0],
+    #         max_value=n_bins_app,
+    #     ),
+    #     bins=n_bins_app,
+    # )[0]
+    # H_real_lifespan = np.histogram(real_data["lifespan"], bins=n_bins_ls)[0]
+    # H_real_quality = np.histogram(real_data["quality"], bins=n_bins_q)[0]
+    # real_acceptance_rate = real_data["acceptance"].mean()
+    
+    # H_real_papers_per_author = H_real_papers_per_author / H_real_papers_per_author.sum()
+    # H_real_authors_per_paper = H_real_authors_per_paper / H_real_authors_per_paper.sum()
+    # H_real_lifespan = H_real_lifespan / H_real_lifespan.sum()
+    # H_real_quality = H_real_quality / H_real_quality.sum()
+    
+    # d1 = wasserstein_distance(H_real_papers_per_author, H_sim1)
+    # d2 = wasserstein_distance(H_real_authors_per_paper, H_sim2)
+    # d3 = wasserstein_distance(H_real_lifespan, H_sim3)
+    # d4 = wasserstein_distance(H_real_quality, H_sim4)
+    # d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
+    d1 = wasserstein_distance(real_data["papers_per_author"], sim_data["papers_per_author"])
+    d2 = wasserstein_distance(real_data["authors_per_paper"][real_data["authors_per_paper"] > 0], sim_data["authors_per_paper"])
+    d3 = wasserstein_distance(real_data["lifespan"], sim_data["lifespan"])
+    d4 = wasserstein_distance(real_data["quality"], sim_data["quality"])
     sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
-    
-    H_real_papers_per_author = np.histogram(
-        truncate_right_tail(real_data["papers_per_author"], max_value=n_bins_ppa),
-        bins=n_bins_ppa,
-    )[0]
-    H_real_authors_per_paper = np.histogram(
-        truncate_right_tail(
-            real_data["authors_per_paper"][real_data["authors_per_paper"] > 0],
-            max_value=n_bins_app,
-        ),
-        bins=n_bins_app,
-    )[0]
-    H_real_lifespan = np.histogram(real_data["lifespan"], bins=n_bins_ls)[0]
-    H_real_quality = np.histogram(real_data["quality"], bins=n_bins_q)[0]
     real_acceptance_rate = real_data["acceptance"].mean()
-    
-    H_real_papers_per_author = H_real_papers_per_author / H_real_papers_per_author.sum()
-    H_real_authors_per_paper = H_real_authors_per_paper / H_real_authors_per_paper.sum()
-    H_real_lifespan = H_real_lifespan / H_real_lifespan.sum()
-    H_real_quality = H_real_quality / H_real_quality.sum()
-    
-    d1 = wasserstein_distance(H_real_papers_per_author, H_sim1)
-    d2 = wasserstein_distance(H_real_authors_per_paper, H_sim2)
-    d3 = wasserstein_distance(H_real_lifespan, H_sim3)
-    d4 = wasserstein_distance(H_real_quality, H_sim4)
     d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-    
     loss_val = d1 + d2 + d3 + d4 + (d5 * 0.1)
     print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
     return loss_val
@@ -593,8 +599,7 @@ def main():
         "quality": np.load("quality_histogram.npy"),
         "acceptance": np.load("acceptance_histogram.npy"),
     }
-
-    calibrate(sweep_1_problem, real_data, n_workers=40, n_calls=400)
+    calibrate(sweep_1_problem, real_data, n_workers=1, n_calls=1)
 
 
 if __name__ == "__main__":
