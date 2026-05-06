@@ -26,21 +26,27 @@ class RewardManager:
             project: The project object that was completed.
             quality_reward: The calculated reward based on project quality and threshold.
         """
-        # 1. Determine Base Reward
+        # 1. Determine Success
+        is_successful = quality_reward > 0
+        if is_successful:
+            for idx in project.contributors:
+                if project.project_id not in self.env.agent_successful_projects[idx]:
+                    self.env.agent_successful_projects[idx].append(project.project_id)
+
+        # 2. Determine Base Reward
         base_reward = 0.0
         if self.reward_type == "reputation":
             base_reward = quality_reward
         elif self.reward_type == "raw_pubcount":
-            base_reward = 1.0 if quality_reward > 0 else 0.0
+            base_reward = 1.0 if is_successful else 0.0
         elif self.reward_type == "h_index":
             # h_index rewards are handled in apply_step_rewards
             base_reward = 0.0
 
-        # 2. Distribute Reward (if any)
+        # 3. Distribute Reward (if any) and Cleanup
         if base_reward > 0:
             self._apply_distribution(project, base_reward)
         else:
-            # Still need to cleanup state even if no reward
             self._cleanup_project(project)
 
     def apply_step_rewards(self):
@@ -76,10 +82,7 @@ class RewardManager:
     def _apply_distribution(self, p, total_reward):
         """Shared logic to distribute a total reward pool among project contributors."""
         # Clean up slots first
-        for idx in p.contributors:
-            self.env.remove_active_project(idx, p.project_id)
-            self.env.agent_successful_projects[idx].append(p.project_id)
-            self.env.agent_completed_projects[idx] += 1
+        self._cleanup_project(p)
 
         # Apply distribution
         if self.distribution_mode == "multiply":

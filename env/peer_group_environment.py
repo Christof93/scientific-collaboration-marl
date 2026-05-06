@@ -40,6 +40,7 @@ class PeerGroupEnvironment(ParallelEnv):
         coordination_factor: float = 0.2,
         reward_type: str = "reputation",
         distribution_mode: str = "multiply",
+        continuation_probability: float = 0.5,
         render_mode: Optional[str] = None,
     ) -> None:
         self.n_agents: int = max_agents
@@ -50,9 +51,10 @@ class PeerGroupEnvironment(ParallelEnv):
         self.n_projects_per_step: int = n_projects_per_step
         self.max_projects_per_agent: int = max_projects_per_agent
         self.max_agent_age: int = int(max_agent_age)
-        self.reward_type = reward_type
-        self.distribution_mode = distribution_mode
+        self.reward_type: str = reward_type
+        self.distribution_mode: str = distribution_mode
         self.max_rewardless_steps: int = int(max_rewardless_steps)
+        self.continuation_probability: float = continuation_probability
         self.growth_rate: float = growth_rate
         self.acceptance_threshold: float = acceptance_threshold
         self.coordination_factor: float = coordination_factor
@@ -708,17 +710,18 @@ class PeerGroupEnvironment(ParallelEnv):
             if reward > 0:
                 if distances is not None:
                     new_distances.append(distances)
-                    # update hindex
-                    for citedp in p.citations:
-                        for c in self.projects[citedp].contributors:
-                            self.agent_h_indexes[c] = self.h_index(c)
 
                 self.reward_manager.distribute_project_reward(p, reward)
+                
+                # update h-index of cited authors
+                for citedp in p.citations:
+                    for c in self.projects[citedp].contributors:
+                        self.agent_h_indexes[c] = self.h_index(c)
 
                 p.finished = True
             else:
                 # Not accepted. Chance to continue effort with lower prestige.
-                if np.random.rand() < 0.5:
+                if np.random.rand() < self.continuation_probability:
                     p.prestige *= np.random.uniform(0.5, 0.9)
                     # Extend the time window by a random fraction of the required effort
                     p.time_window += max(5, int(p.required_effort * np.random.uniform(0.3, 0.8)))
