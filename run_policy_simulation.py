@@ -212,9 +212,9 @@ def run_simulation_with_policies(
         or {"careerist": 1 / 3, "orthodox_scientist": 1 / 3, "mass_producer": 1 / 3},
     }
 
-    # if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
-    #     with open(output_file_prefix + "_summary.json", "w") as f:
-    #         json.dump(results, f, indent=2)
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+        with open("log/" + output_file_prefix + "_summary.json", "w") as f:
+            json.dump(results, f, indent=2)
 
     if verbose:
         print(f"\nFinal Results:")
@@ -320,31 +320,32 @@ if __name__ == "__main__":
         "h_index": [('acceptance_threshold', 0.9053084788822198), ('orthodox_novelty_threshold', 0.20069855755147567), ('careerist_prestige_threshold', 0.42430608517323376), ('mass_producer_effort_threshold', np.int64(42)), ('max_rewardless_steps', np.int64(500)), ('coordination_factor', 6.900147426793636e-05)]
     }
     REWARD_TYPE = "h_index"
+    DISTRIBUTION_MODE = "multiply"
     cp = {k:v for k,v in CALIBRATED_PARAMS[REWARD_TYPE]}
     # Choose between running a single simulation or the full batch
-    # run_simulation_with_policies(
-    #     n_agents=2000,
-    #     start_agents=200,
-    #     max_steps=600,
-    #     n_groups=20,
-    #     max_peer_group_size=100,
-    #     policy_distribution={
-    #         "careerist": 1 / 3,
-    #         "orthodox_scientist": 1 / 3,
-    #         "mass_producer": 1 / 3,
-    #     },
-    #     output_file_prefix="balanced_reputation_multiply_seed42",
-    #     group_policy_homogenous=False,
-    #     reward_type="reputation",
-    #     distribution_mode="multiply",
-    #     seed=42,
-    #     max_rewardless_steps=cp["max_rewardless_steps"],
-    #     acceptance_threshold=cp["acceptance_threshold"],
-    #     novelty_threshold=cp["orthodox_novelty_threshold"],
-    #     prestige_threshold=cp["careerist_prestige_threshold"],
-    #     effort_threshold=cp["mass_producer_effort_threshold"],
-    #     coordination_factor=cp["coordination_factor"],
-    # )
+    run_simulation_with_policies(
+        n_agents=2000,
+        start_agents=200,
+        max_steps=600,
+        n_groups=20,
+        max_peer_group_size=100,
+        policy_distribution={
+            "careerist": 1 / 3,
+            "orthodox_scientist": 1 / 3,
+            "mass_producer": 1 / 3,
+        },
+        output_file_prefix=f"balanced_{REWARD_TYPE}_{DISTRIBUTION_MODE}_seed42",
+        group_policy_homogenous=False,
+        reward_type=REWARD_TYPE,
+        distribution_mode=DISTRIBUTION_MODE,
+        seed=42,
+        max_rewardless_steps=cp["max_rewardless_steps"],
+        acceptance_threshold=cp["acceptance_threshold"],
+        novelty_threshold=cp["orthodox_novelty_threshold"],
+        prestige_threshold=cp["careerist_prestige_threshold"],
+        effort_threshold=cp["mass_producer_effort_threshold"],
+        coordination_factor=cp["coordination_factor"],
+    )
 
     # Run simulation for all reward functions on random seeds in parallel
-    run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=30)
+    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=30)
