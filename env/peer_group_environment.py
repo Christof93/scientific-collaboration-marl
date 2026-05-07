@@ -350,8 +350,6 @@ class PeerGroupEnvironment(ParallelEnv):
     def _find_project_setting(
         self, project_idx: int, peer_group: np.ndarray, intents: np.ndarray
     ) -> List[Tuple[str, List[int]]]:
-        # print(peer_group)
-        # print(intents)
         if len(peer_group) == 0:
             return []
         ## no collaboration
@@ -730,6 +728,8 @@ class PeerGroupEnvironment(ParallelEnv):
 
                     p.finished = True
 
+        # Apply rewards before agents terminate to ensure final rewards are captured
+        self.reward_manager.apply_step_rewards()
         new_projects = [p for p in due_projects if p.final_reward > 0]
         if len(new_projects) > 0:
             self._update_distances(
@@ -823,8 +823,6 @@ class PeerGroupEnvironment(ParallelEnv):
                 group = np.random.choice(range(self.n_groups))
                 agents_activated_in_step.append(self._activate_agent(group))
 
-        self.reward_manager.apply_step_rewards()
-
         # regenerate open projects
         self._generate_projects()
 
@@ -886,7 +884,7 @@ class PeerGroupEnvironment(ParallelEnv):
                 [np.nansum(self.agent_rewards[idx, :])], dtype=np.float32
             ),
             "peer_centroids": np.array(peer_centroids, dtype=np.float64),
-            "peer_h_index": np.array([self.agent_h_indexes[idx]], dtype=np.int16),
+            "peer_h_index": np.array([self.agent_h_indexes[i] for i in peer_group], dtype=np.int16),
             "self_centroid": np.array([self_centroid], dtype=np.float64),
             "project_opportunities": self._get_open_projects_obs(idx),
             "running_projects": self._get_running_projects_obs(idx, peer_group),

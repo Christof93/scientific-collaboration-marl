@@ -35,15 +35,22 @@ def convert_numpy(obj):
 #     max_rewardless_steps=250,
 # )
 # Initialize environment
+
 env = PeerGroupEnvironment(
     start_agents=10,
+    max_steps=200,
     max_agents=100,
     n_groups=2,
     max_peer_group_size=100,
     n_projects_per_step=1,
-    max_projects_per_agent=5,
-    max_agent_age=500,
-    max_rewardless_steps=250,
+    max_projects_per_agent=8,
+    max_agent_age=100,
+    max_rewardless_steps=50,
+    acceptance_threshold=0.9,
+    coordination_factor=0.2,
+    continuation_probability=0.5,
+    reward_type="h_index",
+    distribution_mode="multiply",
 )
 
 obs, infos = env.reset(seed=SEED)

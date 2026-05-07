@@ -15,7 +15,7 @@ class RewardManager:
 
     def reset(self):
         """Called during environment reset."""
-        self.prev_h_indexes = self.env.agent_h_indexes.copy()
+        self.prev_h_indexes = np.zeros(self.env.n_agents, dtype=np.int16)
 
     def distribute_project_reward(self, project: Any, quality_reward: float):
         """
@@ -55,19 +55,12 @@ class RewardManager:
         Used for 'h_index' reward type.
         """
         if self.reward_type == "h_index":
-            # Current implementation treats h-index delta as individual (multiply)
-            # as it's a personal career metric.
             current_h = self.env.agent_h_indexes
             delta = current_h - self.prev_h_indexes
-            
             for i in range(self.env.n_agents):
-                if self.env.active_agents[i] == 1 and delta[i] > 0:
+                if delta[i] > 0:
                     reward_val = float(delta[i])
-                    # Note: We currently don't 'distribute' h-index deltas because 
-                    # they are not tied to a single project completion event in the manager.
-                    # If distribution modes are needed for h-index, we would need to 
-                    # track which citation caused which increase.
-                    self.env.agent_rewards[i, self.env.timestep] += reward_val
+                    self.env.agent_rewards[i, self.env.timestep] = reward_val
                     self.env.rewards[f"agent_{i}"] += reward_val
             
             self.prev_h_indexes = current_h.copy()
