@@ -36,7 +36,7 @@ def get_peer_groups(n_agents=2000, n_groups=20, seed=42):
     return groups
 
 def replay(prefix, steps_to_show=10):
-    summary_path = f"{prefix}_summary.json"
+    summary_path = f"log/{prefix}_summary.json"
     obs_path = f"log/{prefix}_observations.jsonl"
     act_path = f"log/{prefix}_actions.jsonl"
 
@@ -197,7 +197,7 @@ def replay(prefix, steps_to_show=10):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prefix", default="balanced_multiply_seed42")
+    parser.add_argument("--prefix", default="balanced_h_index_multiply_seed42")
     parser.add_argument("--steps", type=int, default=10)
     args = parser.parse_args()
     replay(args.prefix, args.steps)

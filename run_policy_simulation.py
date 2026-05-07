@@ -71,6 +71,7 @@ def run_simulation_with_policies(
     reward_type: str = "reputation",
     distribution_mode: str = "multiply",
     coordination_factor: float = 0.2,
+    continuation_probability: float = 0.5,
     verbose: bool = True,
 ):
     """
@@ -96,6 +97,7 @@ def run_simulation_with_policies(
         max_rewardless_steps=max_rewardless_steps,
         acceptance_threshold=acceptance_threshold,
         coordination_factor=coordination_factor,
+        continuation_probability=continuation_probability,
         reward_type=reward_type,
         distribution_mode=distribution_mode,
     )
@@ -291,6 +293,7 @@ def run_simulation_worker(args):
         prestige_threshold=params["careerist_prestige_threshold"],
         effort_threshold=params["mass_producer_effort_threshold"],
         coordination_factor=params["coordination_factor"],
+        continuation_probability=params["continuation_probability"],
         verbose=False,  # Set to False for parallel execution
     )
     print(f"--- Finished: {reward_type}/{distribution_mode} (seed {seed}) ---")
@@ -315,37 +318,38 @@ def run_all_reward_functions(parameters, r_type, seeds=range(10), n_workers=8):
 
 if __name__ == "__main__":
     CALIBRATED_PARAMS={
-        "reputation": [('acceptance_threshold', 0.838817246400205), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.8), ('mass_producer_effort_threshold', np.int64(31)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.9)],
-        "raw_pubcount": [('acceptance_threshold', 1.0493635604164382), ('orthodox_novelty_threshold', 0.7410063171971115), ('careerist_prestige_threshold', 0.6181825949830249), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(62)), ('coordination_factor', 0.8930664021256496)],
-        "h_index": [('acceptance_threshold', 0.9053084788822198), ('orthodox_novelty_threshold', 0.20069855755147567), ('careerist_prestige_threshold', 0.42430608517323376), ('mass_producer_effort_threshold', np.int64(42)), ('max_rewardless_steps', np.int64(500)), ('coordination_factor', 6.900147426793636e-05)]
+        "reputation": [('acceptance_threshold', 1.4497748272435922), ('orthodox_novelty_threshold', 0.23896873218310066), ('careerist_prestige_threshold', 0.7145188188021434), ('mass_producer_effort_threshold', np.int64(16)), ('max_rewardless_steps', np.int64(115)), ('coordination_factor', 0.045908855896872366), ('continuation_probability', 0.012646728297462877)],
+        "raw_pubcount": [('acceptance_threshold', 1.0186532498783714), ('orthodox_novelty_threshold', 0.4516143199772456), ('careerist_prestige_threshold', 0.7889634383396336), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.0017166746052196759), ('continuation_probability', 0.0)],
+        "h_index": [('acceptance_threshold', 0.6626625100685154), ('orthodox_novelty_threshold', 0.4954309338142309), ('careerist_prestige_threshold', 0.479753930534454), ('mass_producer_effort_threshold', np.int64(49)), ('max_rewardless_steps', np.int64(69)), ('coordination_factor', 0.7631946097665597), ('continuation_probability', 0.18294293400428002)]
     }
     REWARD_TYPE = "h_index"
     DISTRIBUTION_MODE = "multiply"
     cp = {k:v for k,v in CALIBRATED_PARAMS[REWARD_TYPE]}
     # Choose between running a single simulation or the full batch
-    run_simulation_with_policies(
-        n_agents=2000,
-        start_agents=200,
-        max_steps=600,
-        n_groups=20,
-        max_peer_group_size=100,
-        policy_distribution={
-            "careerist": 1 / 3,
-            "orthodox_scientist": 1 / 3,
-            "mass_producer": 1 / 3,
-        },
-        output_file_prefix=f"balanced_{REWARD_TYPE}_{DISTRIBUTION_MODE}_seed42",
-        group_policy_homogenous=False,
-        reward_type=REWARD_TYPE,
-        distribution_mode=DISTRIBUTION_MODE,
-        seed=42,
-        max_rewardless_steps=cp["max_rewardless_steps"],
-        acceptance_threshold=cp["acceptance_threshold"],
-        novelty_threshold=cp["orthodox_novelty_threshold"],
-        prestige_threshold=cp["careerist_prestige_threshold"],
-        effort_threshold=cp["mass_producer_effort_threshold"],
-        coordination_factor=cp["coordination_factor"],
-    )
+    # run_simulation_with_policies(
+    #     n_agents=2000,
+    #     start_agents=200,
+    #     max_steps=600,
+    #     n_groups=20,
+    #     max_peer_group_size=100,
+    #     policy_distribution={
+    #         "careerist": 1 / 3,
+    #         "orthodox_scientist": 1 / 3,
+    #         "mass_producer": 1 / 3,
+    #     },
+    #     output_file_prefix=f"balanced_{REWARD_TYPE}_{DISTRIBUTION_MODE}_seed42",
+    #     group_policy_homogenous=False,
+    #     reward_type=REWARD_TYPE,
+    #     distribution_mode=DISTRIBUTION_MODE,
+    #     seed=42,
+    #     max_rewardless_steps=cp["max_rewardless_steps"],
+    #     acceptance_threshold=cp["acceptance_threshold"],
+    #     novelty_threshold=cp["orthodox_novelty_threshold"],
+    #     prestige_threshold=cp["careerist_prestige_threshold"],
+    #     effort_threshold=cp["mass_producer_effort_threshold"],
+    #     coordination_factor=cp["coordination_factor"],
+    #     continuation_probability=cp["continuation_probability"],
+    # )
 
     # Run simulation for all reward functions on random seeds in parallel
-    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=30)
+    run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=30)

@@ -263,7 +263,7 @@ def run_model_parallel(args):
     params, task_idx = args
     # Use worker name (e.g., "SpawnPoolWorker-1") as a stable ID for the log file
     worker_id = multiprocessing.current_process().name
-    acceptance, novelty, prestige, effort, rewardless, coordination = params
+    acceptance, novelty, prestige, effort, rewardless, coordination, continuation = params
     try:
         sim_run = run_simulation_with_policies(
             n_agents=600,
@@ -284,6 +284,7 @@ def run_model_parallel(args):
             prestige_threshold=prestige,
             effort_threshold=effort,
             coordination_factor=coordination,
+            continuation_probability=continuation,
             verbose=False,
         )
         run_projects = sim_run["projects"]
@@ -339,11 +340,11 @@ def sensitivity_analysis(problem):
 
 # ---- Step 2–3: Define worker function ----
 def run_calibration_worker(args):
-    theta, names, real_data = args
+    theta, names, reward_type, real_data = args
     worker_id = multiprocessing.current_process().name
     print(f"Worker {worker_id} evaluating: {list(zip(names, theta))}")
     try:
-        if len(names) == 6:
+        if len(names) == 7:
             sim_run = run_simulation_with_policies(
                 n_agents=2_000,
                 start_agents=200,
@@ -358,36 +359,17 @@ def run_calibration_worker(args):
                 },
                 output_file_prefix=f"calibration_{worker_id}",
                 group_policy_homogenous=0,
-                reward_type="h_index",
+                reward_type=reward_type,
                 acceptance_threshold=theta[names.index("acceptance_threshold")],
                 novelty_threshold=theta[names.index("orthodox_novelty_threshold")],
                 prestige_threshold=theta[names.index("careerist_prestige_threshold")],
                 effort_threshold=theta[names.index("mass_producer_effort_threshold")],
                 coordination_factor=theta[names.index("coordination_factor")],
+                continuation_probability=theta[names.index("continuation_probability")],
                 verbose=False,
             )
         else:
-            sim_run = run_simulation_with_policies(
-                n_agents=2_000,
-                start_agents=200,
-                max_steps=600,
-                n_groups=20,
-                max_peer_group_size=100,
-                max_rewardless_steps=theta[names.index("max_rewardless_steps")],
-                policy_distribution={
-                    "careerist": 1 / 3,
-                    "orthodox_scientist": 1 / 3,
-                    "mass_producer": 1 / 3,
-                },
-                output_file_prefix=f"calibration_{worker_id}",
-                group_policy_homogenous=0,
-                acceptance_threshold=0.95,
-                novelty_threshold=0.53,
-                prestige_threshold=0.6,
-                effort_threshold=theta[names.index("mass_producer_effort_threshold")],
-                coordination_factor=theta[names.index("coordination_factor")],
-                verbose=False,
-            )
+            print("calibration doesn't match parameter count!")
     except Exception as e:
         print(f"Error in worker {worker_id}: {e}")
         return 1e6
@@ -401,70 +383,39 @@ def run_calibration_worker(args):
     
     run_projects = sim_run["projects"]
     sim_data = build_stats(run_projects)
-    # n_bins_ppa = min(
-    #     max(sim_data["papers_per_author"]), max(real_data["papers_per_author"])
-    # )
-    # n_bins_ppa = 200 if n_bins_ppa < 200 else n_bins_ppa
-    # n_bins_app = min(
-    #     max(sim_data["authors_per_paper"]), max(real_data["authors_per_paper"])
-    # )
-    # n_bins_app = 5 if n_bins_app < 5 else n_bins_app
-    # n_bins_ls = min(int(max(sim_data["lifespan"])), max(real_data["lifespan"]))
-    # n_bins_ls = 5 if n_bins_ls < 5 else n_bins_ls
-    # n_bins_q = min(int(max(sim_data["quality"])), max(real_data["quality"]))
-    # n_bins_q = 10 if n_bins_q < 10 else n_bins_q
-    
-    # H_sim1 = np.histogram(sim_data["papers_per_author"], bins=n_bins_ppa)[0]
-    # H_sim2 = np.histogram(sim_data["authors_per_paper"], bins=n_bins_app)[0]
-    # H_sim3 = np.histogram(sim_data["lifespan"], bins=n_bins_ls)[0]
-    # H_sim4 = np.histogram(sim_data["quality"], bins=n_bins_q)[0]
-    
-    # H_sim1 = H_sim1 / H_sim1.sum()
-    # H_sim2 = H_sim2 / H_sim2.sum()
-    # H_sim3 = H_sim3 / H_sim3.sum()
-    # H_sim4 = H_sim4 / H_sim4.sum()
-    # sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
-    
-    # H_real_papers_per_author = np.histogram(
-    #     truncate_right_tail(real_data["papers_per_author"], max_value=n_bins_ppa),
-    #     bins=n_bins_ppa,
-    # )[0]
-    # H_real_authors_per_paper = np.histogram(
-    #     truncate_right_tail(
-    #         real_data["authors_per_paper"][real_data["authors_per_paper"] > 0],
-    #         max_value=n_bins_app,
-    #     ),
-    #     bins=n_bins_app,
-    # )[0]
-    # H_real_lifespan = np.histogram(real_data["lifespan"], bins=n_bins_ls)[0]
-    # H_real_quality = np.histogram(real_data["quality"], bins=n_bins_q)[0]
-    # real_acceptance_rate = real_data["acceptance"].mean()
-    
-    # H_real_papers_per_author = H_real_papers_per_author / H_real_papers_per_author.sum()
-    # H_real_authors_per_paper = H_real_authors_per_paper / H_real_authors_per_paper.sum()
-    # H_real_lifespan = H_real_lifespan / H_real_lifespan.sum()
-    # H_real_quality = H_real_quality / H_real_quality.sum()
-    
-    # d1 = wasserstein_distance(H_real_papers_per_author, H_sim1)
-    # d2 = wasserstein_distance(H_real_authors_per_paper, H_sim2)
-    # d3 = wasserstein_distance(H_real_lifespan, H_sim3)
-    # d4 = wasserstein_distance(H_real_quality, H_sim4)
-    # d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-    d1 = wasserstein_distance(real_data["papers_per_author"], sim_data["papers_per_author"])
-    d2 = wasserstein_distance(real_data["authors_per_paper"][real_data["authors_per_paper"] > 0], sim_data["authors_per_paper"])
-    d3 = wasserstein_distance(real_data["lifespan"], sim_data["lifespan"])
-    d4 = wasserstein_distance(real_data["quality"], sim_data["quality"])
+
+    d1 = scaled_wasserstein_iqr(truncate(real_data["papers_per_author"], 250), truncate(sim_data["papers_per_author"], 250))
+    d2 = scaled_wasserstein_iqr(truncate(real_data["authors_per_paper"], 15), truncate(sim_data["authors_per_paper"], 15))
+    d3 = scaled_wasserstein_iqr(truncate(real_data["lifespan"], 12), truncate(sim_data["lifespan"], 12))
+    d4 = scaled_wasserstein_iqr(real_data["quality"], sim_data["quality"])
     sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
     real_acceptance_rate = real_data["acceptance"].mean()
     d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-    loss_val = d1 + d2 + d3 + d4 + (d5 * 0.1)
+    print(np.log1p(d1), np.log1p(d2), np.log1p(d4), np.log1p(d4))
+    loss_val = (np.log1p(d1) + np.log1p(d2) + np.log1p(d4) + np.log1p(d4)) / 4 + (d5 * 0.2)
     print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
     return loss_val
 
-def calibrate(problem, real_data, n_workers = 8, n_calls = 200):
+def truncate(x, max_val):
+    return x[x <= max_val]
+
+def iqr(x):
+    q75, q25 = np.percentile(x, [75, 25])
+    return q75 - q25
+
+def scaled_wasserstein_iqr(x, y):
+    pooled = np.concatenate([x, y])
+    scale = iqr(pooled)
+    
+    if scale < 1e-8:
+        return 0.0
+    
+    return wasserstein_distance(x, y) / scale
+
+def calibrate(problem, real_data, reward_type, n_workers = 8, n_calls = 300):
     names = problem["names"]
     bounds = problem["bounds"]
-    if len(names) == 6:
+    if len(names) == 7:
         param_space = [
             Real(*bounds[0], name=names[0]),
             Real(*bounds[1], name=names[1]),
@@ -472,6 +423,7 @@ def calibrate(problem, real_data, n_workers = 8, n_calls = 200):
             Integer(*bounds[3], name=names[3]),
             Integer(*bounds[4], name=names[4]),
             Real(*bounds[5], name=names[5]),
+            Real(*bounds[6], name=names[6]),
         ]
     elif len(names) == 3:
         param_space = [
@@ -483,7 +435,7 @@ def calibrate(problem, real_data, n_workers = 8, n_calls = 200):
     # ---- Step 2–3: Define loss function ----
     optimizer = Optimizer(
         dimensions=param_space,
-        n_initial_points=20,
+        n_initial_points=60,
         n_jobs=8,
         random_state=42,
         base_estimator='gp'
@@ -498,7 +450,7 @@ def calibrate(problem, real_data, n_workers = 8, n_calls = 200):
     with ProcessPoolExecutor(max_workers=n_workers) as executor:
         for i in range(n_batches):
             x = optimizer.ask(n_points=n_workers)
-            tasks = [(theta, names, real_data) for theta in x]
+            tasks = [(theta, names, reward_type, real_data) for theta in x]
             y = list(executor.map(run_calibration_worker, tasks))
             optimizer.tell(x, y)
             print(f"Batch {i+1}/{n_batches} complete. Current best loss: {min(optimizer.yi)}")
@@ -560,7 +512,7 @@ def save_real_world_data_only_orcid():
 
 def main():
     sweep_1_problem = {
-        "num_vars": 6,
+        "num_vars": 7,
         "names": [
             "acceptance_threshold",
             "orthodox_novelty_threshold",
@@ -568,6 +520,7 @@ def main():
             "mass_producer_effort_threshold",
             "max_rewardless_steps",
             "coordination_factor",
+            "continuation_probability",
         ],
         "bounds": [
             [0.5, 1.5],  # Real
@@ -576,6 +529,7 @@ def main():
             [10, 50],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
             [0.0, 0.9],  # Real
+            [0.2, 0.8],  # Real
         ],
     }
     # sensitivity_analysis(sweep_1_problem)
@@ -599,7 +553,12 @@ def main():
         "quality": np.load("quality_histogram.npy"),
         "acceptance": np.load("acceptance_histogram.npy"),
     }
-    calibrate(sweep_1_problem, real_data, n_workers=1, n_calls=1)
+    # print("REPUTATION")
+    # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=8, n_calls=300)
+    # print("H-INDEX")
+    # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=8, n_calls=300)
+    print("RAW PUBCOUNT")
+    calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=8, n_calls=300)
 
 
 if __name__ == "__main__":
