@@ -276,6 +276,73 @@ def mass_producer_policy(
     }
 
 
+def random_policy(
+    observation: Dict[str, Any],
+    action_mask: Dict[str, np.ndarray],
+    **kwargs,
+) -> Dict[str, Any]:
+    """Takes random actions allowed by the given mask."""
+    # Choose a random project from allowed
+    choose_mask = action_mask.get("choose_project")
+    allowed_projects = np.where(choose_mask > 0)[0]
+    chosen_project = (
+        np.random.choice(allowed_projects) if len(allowed_projects) > 0 else 0
+    )
+
+    # Randomly collaborate with allowed peers
+    collaborate_mask = action_mask.get("collaborate_with")
+    collaborate_with = np.zeros_like(collaborate_mask)
+    allowed_peers = np.where(collaborate_mask > 0)[0]
+    if len(allowed_peers) > 0:
+        collaborate_with[allowed_peers] = np.random.randint(
+            0, 2, size=len(allowed_peers)
+        )
+
+    # Choose a random project to put effort into
+    put_effort_mask = action_mask.get("put_effort")
+    allowed_effort = np.where(put_effort_mask > 0)[0]
+    put_effort = np.random.choice(allowed_effort) if len(allowed_effort) > 0 else 0
+
+    return {
+        "choose_project": chosen_project,
+        "collaborate_with": collaborate_with,
+        "put_effort": put_effort,
+    }
+
+
+def adverse_policy(
+    observation: Dict[str, Any],
+    action_mask: Dict[str, np.ndarray],
+    prestige_threshold: float = 0.2,
+    **kwargs,
+) -> Dict[str, Any]:
+    """Adverse tactic: never spending effort, always collaborating, taking only low prestige projects."""
+    # Taking only low prestige projects
+    project_opportunities = list(observation.get("project_opportunities").values())
+    choose_project_mask = action_mask.get("choose_project")
+    chosen_project = 0
+
+    # Check all opportunities
+    for i, opp in enumerate(project_opportunities):
+        if opp is not None and _mask_allowed(choose_project_mask, i + 1):
+            if float(opp.get("prestige")[0]) < prestige_threshold:
+                chosen_project = i + 1
+                break
+
+    # Always collaborating
+    collaborate_mask = action_mask.get("collaborate_with")
+    collaborate_with = (collaborate_mask > 0).astype(np.int8)
+
+    # Never spending effort
+    put_effort = 0
+
+    return {
+        "choose_project": chosen_project,
+        "collaborate_with": collaborate_with,
+        "put_effort": put_effort,
+    }
+
+
 def do_nothing_policy(_: Dict[str, Any], action_mask: Dict[str, np.ndarray]):
     return {
         "choose_project": 0,
@@ -294,6 +361,8 @@ def get_policy_function(policy_name: str):
         "orthodox_scientist": orthodox_scientist_policy,
         "mass_producer": mass_producer_policy,
         "maximally_collaborative": maximally_collaborative_policy,
+        "random": random_policy,
+        "adverse": adverse_policy,
     }
     if policy_name not in policies:
         raise ValueError(
