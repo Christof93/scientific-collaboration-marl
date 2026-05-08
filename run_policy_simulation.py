@@ -272,11 +272,11 @@ def run_simulation_worker(args):
     params, seed, reward_type, distribution_mode = args
     print(f"--- Starting: {reward_type}/{distribution_mode} (seed {seed}) ---")
     run_simulation_with_policies(
-        n_agents=2000,
+        n_agents=3000,
         start_agents=200,
         max_steps=600,
         n_groups=20,
-        max_peer_group_size=100,
+        max_peer_group_size=150,
         policy_distribution={
             "careerist": 1 / 3,
             "orthodox_scientist": 1 / 3,
@@ -318,9 +318,9 @@ def run_all_reward_functions(parameters, r_type, seeds=range(10), n_workers=8):
 
 if __name__ == "__main__":
     CALIBRATED_PARAMS={
-        "reputation": [('acceptance_threshold', 1.4497748272435922), ('orthodox_novelty_threshold', 0.23896873218310066), ('careerist_prestige_threshold', 0.7145188188021434), ('mass_producer_effort_threshold', np.int64(16)), ('max_rewardless_steps', np.int64(115)), ('coordination_factor', 0.045908855896872366), ('continuation_probability', 0.012646728297462877)],
-        "raw_pubcount": [('acceptance_threshold', 1.0186532498783714), ('orthodox_novelty_threshold', 0.4516143199772456), ('careerist_prestige_threshold', 0.7889634383396336), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.0017166746052196759), ('continuation_probability', 0.0)],
-        "h_index": [('acceptance_threshold', 0.6626625100685154), ('orthodox_novelty_threshold', 0.4954309338142309), ('careerist_prestige_threshold', 0.479753930534454), ('mass_producer_effort_threshold', np.int64(49)), ('max_rewardless_steps', np.int64(69)), ('coordination_factor', 0.7631946097665597), ('continuation_probability', 0.18294293400428002)]
+        "reputation": [('acceptance_threshold', 0.9070562642422293), ('orthodox_novelty_threshold', 0.4661882540054239), ('careerist_prestige_threshold', 0.5288947013824785), ('mass_producer_effort_threshold', np.int64(16)), ('max_rewardless_steps', np.int64(53)), ('coordination_factor', 0.18377486003694873), ('continuation_probability', 0.4036963525119355)],
+        "raw_pubcount": [('acceptance_threshold', 0.7625441136962994), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.5563978708007807), ('mass_producer_effort_threshold', np.int64(12)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.58953459329011), ('continuation_probability', 0.21996776415961516)],
+        "h_index": [('acceptance_threshold', 0.7001955006534182), ('orthodox_novelty_threshold', 0.7569754628832838), ('careerist_prestige_threshold', 0.4949222510564053), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(64)), ('coordination_factor', 0.10039137685896896), ('continuation_probability', 0.2460463010038782)]
     }
     REWARD_TYPE = "h_index"
     DISTRIBUTION_MODE = "multiply"
