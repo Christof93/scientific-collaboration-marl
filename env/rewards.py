@@ -42,6 +42,8 @@ class RewardManager:
         elif self.reward_type == "h_index":
             # h_index rewards are handled in apply_step_rewards
             base_reward = 0.0
+        elif self.reward_type == "all":
+            base_reward = quality_reward + 1.0 if is_successful else 0.0
 
         # 3. Distribute Reward (if any) and Cleanup
         if base_reward > 0:
@@ -54,13 +56,13 @@ class RewardManager:
         Applied at the end of every step to handle rewards based on step-over-step deltas.
         Used for 'h_index' reward type.
         """
-        if self.reward_type == "h_index":
+        if self.reward_type in ["h_index", "all"]:
             current_h = self.env.agent_h_indexes
             delta = current_h - self.prev_h_indexes
             for i in range(self.env.n_agents):
                 if delta[i] > 0:
                     reward_val = float(delta[i])
-                    self.env.agent_rewards[i, self.env.timestep] = reward_val
+                    self.env.agent_rewards[i, self.env.timestep] += reward_val
                     self.env.rewards[f"agent_{i}"] += reward_val
             
             self.prev_h_indexes = current_h.copy()

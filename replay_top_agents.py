@@ -197,7 +197,7 @@ def replay(prefix, steps_to_show=10):
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prefix", default="balanced_h_index_multiply_seed42")
+    parser.add_argument("--prefix", default="balanced_reputation_multiply_seed2")
     parser.add_argument("--steps", type=int, default=10)
     args = parser.parse_args()
     replay(args.prefix, args.steps)

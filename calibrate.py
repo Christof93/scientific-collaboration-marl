@@ -346,11 +346,11 @@ def run_calibration_worker(args):
     try:
         if len(names) == 7:
             sim_run = run_simulation_with_policies(
-                n_agents=2_000,
+                n_agents=3_000,
                 start_agents=200,
                 max_steps=600,
                 n_groups=20,
-                max_peer_group_size=100,
+                max_peer_group_size=150,
                 max_rewardless_steps=theta[names.index("max_rewardless_steps")],
                 policy_distribution={
                     "careerist": 1 / 3,
@@ -524,11 +524,11 @@ def main():
         ],
         "bounds": [
             [0.5, 1.5],  # Real
-            [0.2, 0.8],  # Real
-            [0.2, 0.8],  # Real
+            [0.4, 0.8],  # Real
+            [0.2, 0.6],  # Real
             [10, 50],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
-            [0.0, 0.9],  # Real
+            [0.1, 0.9],  # Real
             [0.2, 0.8],  # Real
         ],
     }
@@ -554,11 +554,13 @@ def main():
         "acceptance": np.load("acceptance_histogram.npy"),
     }
     # print("REPUTATION")
-    # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=8, n_calls=300)
+    # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=4, n_calls=300)
     # print("H-INDEX")
-    # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=8, n_calls=300)
-    print("RAW PUBCOUNT")
-    calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=8, n_calls=300)
+    # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
+    # print("RAW PUBCOUNT")
+    # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
+    print("ALL")
+    calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=4, n_calls=300)
 
 
 if __name__ == "__main__":
