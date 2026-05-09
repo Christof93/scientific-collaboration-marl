@@ -50,6 +50,10 @@ class SimulationStats:
 
         # Reward tracking
         self.total_rewards_distributed: float = 0.0
+        self.total_societal_value: float = 0.0
+
+        # Population instability
+        self.total_terminations: int = 0
 
         # Observation aggregations (last snapshot)
         self.last_obs_aggregate: Dict[str, float] = {}
@@ -152,6 +156,7 @@ class SimulationStats:
                 if project_reward > 0:
                     self.successful_projects_count += 1
                     self.successful_projects_efforts.append(project_effort)
+                    self.total_societal_value += _as_float(proj.get("societal_value_score", 0.0))
                 else:
                     self.unsuccessful_projects_count += 1
                     self.unsuccessful_projects_efforts.append(project_effort)
@@ -161,6 +166,10 @@ class SimulationStats:
 
                 # Log detailed project metrics
                 # self._log_finished_project(env, proj, proj_id)
+
+        # Track terminations
+        if terminations:
+            self.total_terminations += sum(terminations.values())
 
         # 3) Rewards distributed this step (sum across agents)
         if rewards:
@@ -367,6 +376,8 @@ class SimulationStats:
             "avg_finished_project_duration": avg_finished_project_duration,
             "avg_finished_project_team_size": avg_finished_project_team_size,
             "total_rewards_distributed": self.total_rewards_distributed,
+            "total_societal_value": self.total_societal_value,
+            "total_terminations": self.total_terminations,
             "avg_reward_per_step": avg_reward_per_step,
             "per_agent_total_effort": dict(self.total_effort_per_agent),
             "observation_aggregates": dict(self.last_obs_aggregate),
