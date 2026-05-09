@@ -313,7 +313,7 @@ def random_policy(
 def adverse_policy(
     observation: Dict[str, Any],
     action_mask: Dict[str, np.ndarray],
-    prestige_threshold: float = 0.2,
+    prestige_threshold: float = 0.4,
     **kwargs,
 ) -> Dict[str, Any]:
     """Adverse tactic: never spending effort, always collaborating, taking only low prestige projects."""

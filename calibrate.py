@@ -266,11 +266,11 @@ def run_model_parallel(args):
     acceptance, novelty, prestige, effort, rewardless, coordination, continuation = params
     try:
         sim_run = run_simulation_with_policies(
-            n_agents=600,
+            n_agents=800,
             start_agents=100,
             max_steps=400,
             n_groups=10,
-            max_peer_group_size=100,
+            max_peer_group_size=80,
             max_rewardless_steps=rewardless,
             policy_distribution={
                 "careerist": 1 / 3,
@@ -279,6 +279,7 @@ def run_model_parallel(args):
             },
             output_file_prefix=f"sensitivity_{worker_id}",
             group_policy_homogenous=False,
+            reward_type="all",
             acceptance_threshold=acceptance,
             novelty_threshold=novelty,
             prestige_threshold=prestige,
@@ -532,7 +533,7 @@ def main():
             [0.2, 0.8],  # Real
         ],
     }
-    # sensitivity_analysis(sweep_1_problem)
+    sensitivity_analysis(sweep_1_problem)
     sweep_2_problem = {
         "num_vars": 3,
         "names": [
@@ -559,8 +560,8 @@ def main():
     # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
     # print("RAW PUBCOUNT")
     # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
-    print("ALL")
-    calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=4, n_calls=300)
+    # print("ALL")
+    # calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=4, n_calls=300)
 
 
 if __name__ == "__main__":
