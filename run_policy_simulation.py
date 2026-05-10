@@ -319,16 +319,17 @@ def run_all_reward_functions(parameters, r_type, seeds=range(10), n_workers=8, d
 
     print("All simulations completed.")
 
+CALIBRATED_PARAMS={
+    "reputation": [('acceptance_threshold', 0.9070562642422293), ('orthodox_novelty_threshold', 0.4661882540054239), ('careerist_prestige_threshold', 0.5288947013824785), ('mass_producer_effort_threshold', np.int64(16)), ('max_rewardless_steps', np.int64(53)), ('coordination_factor', 0.18377486003694873), ('continuation_probability', 0.4036963525119355)],
+    "raw_pubcount": [('acceptance_threshold', 0.7625441136962994), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.5563978708007807), ('mass_producer_effort_threshold', np.int64(12)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.58953459329011), ('continuation_probability', 0.21996776415961516)],
+    "h_index": [('acceptance_threshold', 0.7001955006534182), ('orthodox_novelty_threshold', 0.7569754628832838), ('careerist_prestige_threshold', 0.4949222510564053), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(64)), ('coordination_factor', 0.10039137685896896), ('continuation_probability', 0.2460463010038782)],
+    "all": [('acceptance_threshold', 1.1637780469746222), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(20)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.1), ('continuation_probability', 0.5190629152756893)]
+}
+REWARD_TYPE = "all"
+DISTRIBUTION_MODE = "multiply"
 
 if __name__ == "__main__":
-    CALIBRATED_PARAMS={
-        "reputation": [('acceptance_threshold', 0.9070562642422293), ('orthodox_novelty_threshold', 0.4661882540054239), ('careerist_prestige_threshold', 0.5288947013824785), ('mass_producer_effort_threshold', np.int64(16)), ('max_rewardless_steps', np.int64(53)), ('coordination_factor', 0.18377486003694873), ('continuation_probability', 0.4036963525119355)],
-        "raw_pubcount": [('acceptance_threshold', 0.7625441136962994), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.5563978708007807), ('mass_producer_effort_threshold', np.int64(12)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.58953459329011), ('continuation_probability', 0.21996776415961516)],
-        "h_index": [('acceptance_threshold', 0.7001955006534182), ('orthodox_novelty_threshold', 0.7569754628832838), ('careerist_prestige_threshold', 0.4949222510564053), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(64)), ('coordination_factor', 0.10039137685896896), ('continuation_probability', 0.2460463010038782)],
-        "all": [('acceptance_threshold', 1.1637780469746222), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(20)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.1), ('continuation_probability', 0.5190629152756893)]
-    }
-    REWARD_TYPE = "all"
-    DISTRIBUTION_MODE = "multiply"
+    
     cp = {k:v for k,v in CALIBRATED_PARAMS[REWARD_TYPE]}
     # Choose between running a single simulation or the full batch
     run_simulation_with_policies(
@@ -338,9 +339,12 @@ if __name__ == "__main__":
         n_groups=20,
         max_peer_group_size=150,
         policy_distribution={
-            "adverse": 1,
+            "adverse": 0.1,
+            "mass_producer": 0.3,
+            "careerist": 0.3,
+            "orthodox_scientist": 0.3,
         },
-        output_file_prefix=f"balanced_adverse_{REWARD_TYPE}_{DISTRIBUTION_MODE}_seed42",
+        output_file_prefix=f"balanced_{REWARD_TYPE}_{DISTRIBUTION_MODE}_seed42",
         group_policy_homogenous=True,
         reward_type=REWARD_TYPE,
         distribution_mode=DISTRIBUTION_MODE,

@@ -169,7 +169,7 @@ class SimulationStats:
 
         # Track terminations
         if terminations:
-            self.total_terminations += sum(terminations.values())
+            self.total_terminations += int(sum(terminations.values()))
 
         # 3) Rewards distributed this step (sum across agents)
         if rewards:

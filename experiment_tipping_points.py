@@ -27,7 +27,7 @@ def run_experiment_step(args):
     # Fallback to defaults if "all" isn't calibrated. In their code, "all" was in CALIBRATED_PARAMS.
     cp = params_dict
     
-    output_prefix = f"tipping_point_adverse_{adverse_prop:.2f}"
+    output_prefix = f"tipping_point_adverse_{adverse_prop:.2f}_{REWARD_TYPE}"
     
     result = run_simulation_with_policies(
         n_agents=3000,
@@ -71,26 +71,23 @@ def main():
     proportions = np.linspace(0.0, 1.0, 21) # 0.0, 0.05, 0.10, ..., 1.0
     
     # Use "all" calibrated params as specified in run_policy_simulation.py
-    REWARD_TYPE = "all"
-    if REWARD_TYPE in CALIBRATED_PARAMS:
-        cp = {k: v for k, v in CALIBRATED_PARAMS[REWARD_TYPE]}
-    else:
-        # Fallback to reputation
-        cp = {k: v for k, v in CALIBRATED_PARAMS["reputation"]}
+    REWARD_TYPE = "reputation"
+    # try different reward types and make all plots
+    cp = {k: v for k, v in CALIBRATED_PARAMS[REWARD_TYPE]}
         
     tasks = [(p, cp) for p in proportions]
     
     results = []
     # Run in parallel
     print(f"Starting tipping point experiment with {len(tasks)} runs...")
-    with ProcessPoolExecutor(max_workers=8) as executor:
+    with ProcessPoolExecutor(max_workers=21) as executor:
         results = list(executor.map(run_experiment_step, tasks))
         
     # Sort results by proportion just in case
     results.sort(key=lambda x: x["adverse_proportion"])
     
     # Save to JSON
-    output_file = "log/tipping_point_experiment_results.json"
+    output_file = f"log/tipping_point_experiment_{REWARD_TYPE}_results.json"
     with open(output_file, "w") as f:
         json.dump(results, f, indent=2)
         
