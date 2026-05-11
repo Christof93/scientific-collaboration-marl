@@ -808,19 +808,34 @@ class PeerGroupEnvironment(ParallelEnv):
                 self.active_agents[agent_id] = 0
                 group = self.agent_peer_idx[agent_id]
                 agents_activated_in_step.append(self._activate_agent(group))
+        # Calculate group weights based on combined reputation
+        group_reputations = np.zeros(self.n_groups)
+        for i, g in enumerate(self.peer_groups):
+            rep = 0.0
+            for a in g:
+                rep += np.nansum(self.agent_rewards[a, :])
+            group_reputations[i] = max(0.0, rep)
+            
+        total_rep = np.sum(group_reputations)
+        if total_rep > 0:
+            group_weights = group_reputations / total_rep
+        else:
+            group_weights = np.ones(self.n_groups) / self.n_groups
+
         # grow active agents
         if self.growth_rate < 1:
             if self.timestep % (1 // self.growth_rate) == 0 and np.random.rand() < 0.7:
-                # TODO: choice weighted by success?
-                group = np.random.choice(range(self.n_groups))
+                group = np.random.choice(range(self.n_groups), p=group_weights)
                 agents_activated_in_step.append(self._activate_agent(group))
         else:
-            each_step = np.floor(self.growth_rate)
+            each_step = int(np.floor(self.growth_rate))
             for _ in range(each_step):
-                group = np.random.choice(range(self.n_groups))
+                group = np.random.choice(range(self.n_groups), p=group_weights)
                 agents_activated_in_step.append(self._activate_agent(group))
-            if self.timestep % (1 // (self.growth_rate - each_step)) == 0:
-                group = np.random.choice(range(self.n_groups))
+                
+            growth_remainder = self.growth_rate - each_step
+            if growth_remainder > 0 and self.timestep % (1 // growth_remainder) == 0:
+                group = np.random.choice(range(self.n_groups), p=group_weights)
                 agents_activated_in_step.append(self._activate_agent(group))
 
         # regenerate open projects
