@@ -339,12 +339,10 @@ if __name__ == "__main__":
         n_groups=20,
         max_peer_group_size=150,
         policy_distribution={
-            "adverse": 0.1,
-            "mass_producer": 0.3,
-            "careerist": 0.3,
-            "orthodox_scientist": 0.3,
+            "random": 0.5,
+            "careerist": 0.5
         },
-        output_file_prefix=f"balanced_{REWARD_TYPE}_{DISTRIBUTION_MODE}_seed42",
+        output_file_prefix=f"balanced_{REWARD_TYPE}_{DISTRIBUTION_MODE}_careerist_vs_random_seed42",
         group_policy_homogenous=True,
         reward_type=REWARD_TYPE,
         distribution_mode=DISTRIBUTION_MODE,
@@ -359,7 +357,7 @@ if __name__ == "__main__":
     )
 
     # Run simulation for all reward functions on random seeds in parallel
-    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=30, distribution_modes=["multiply"])
+    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=10, distribution_modes=["multiply"])
     # run_all_reward_functions(cp, r_type = "reputation", seeds=range(10), n_workers=30, distribution_modes=["multiply"])
     # run_all_reward_functions(cp, r_type = "raw_pubcount", seeds=range(10), n_workers=30, distribution_modes=["multiply"])
     # run_all_reward_functions(cp, r_type = "h_index", seeds=range(10), n_workers=30, distribution_modes=["multiply"])

@@ -81,7 +81,7 @@ def replay(prefix, steps_to_show=10):
         print(f"Error reading reputations: {e}")
         return
 
-    archetypes = ["careerist", "orthodox_scientist", "mass_producer"]
+    archetypes = ["careerist", "orthodox_scientist", "mass_producer", "adverse"]
     top_agents = {}
     for arch in archetypes:
         best_id = None
@@ -119,9 +119,11 @@ def replay(prefix, steps_to_show=10):
         with open(obs_path) as f_obs, open(act_path) as f_act:
             step = 0
             for line_obs, line_act in zip(f_obs, f_act):
-                if step >= steps_to_show:
+                if steps_to_show>=0 and step >= steps_to_show:
                     break
-                    
+                elif steps_to_show<0 and step <= abs(steps_to_show):
+                    step+=1
+                    continue
                 obs_row = json.loads(line_obs)
                 act_row = json.loads(line_act)
                 
@@ -184,7 +186,7 @@ def replay(prefix, steps_to_show=10):
                     
                     # Sort active peers by reputation
                     active_peers.sort(key=lambda x: x[2], reverse=True)
-                    for p_idx, p_arch, p_rep, p_cent in active_peers[:5]:
+                    for p_idx, p_arch, p_rep, p_cent in active_peers[:20]:
                         p_color = arch_colors.get(p_arch, "")
                         print(f"    - agent_{p_idx:4} ({p_color}{p_arch:18}{C_END}) | Rep: {p_rep:6.2f} | Topic: ({p_cent[0]:5.2f}, {p_cent[1]:5.2f})")
                 

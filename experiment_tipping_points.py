@@ -71,7 +71,7 @@ def main():
     proportions = np.linspace(0.0, 1.0, 21) # 0.0, 0.05, 0.10, ..., 1.0
     
     # Use "all" calibrated params as specified in run_policy_simulation.py
-    REWARD_TYPE = "reputation"
+    REWARD_TYPE = "h_index"
     # try different reward types and make all plots
     cp = {k: v for k, v in CALIBRATED_PARAMS[REWARD_TYPE]}
         
