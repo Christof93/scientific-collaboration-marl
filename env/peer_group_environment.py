@@ -41,6 +41,7 @@ class PeerGroupEnvironment(ParallelEnv):
         reward_type: str = "reputation",
         distribution_mode: str = "multiply",
         continuation_probability: float = 0.5,
+        ratio_group_expansion_depends_on_success: float = 0.0,
         render_mode: Optional[str] = None,
     ) -> None:
         self.n_agents: int = max_agents
@@ -55,6 +56,7 @@ class PeerGroupEnvironment(ParallelEnv):
         self.distribution_mode: str = distribution_mode
         self.max_rewardless_steps: int = int(max_rewardless_steps)
         self.continuation_probability: float = continuation_probability
+        self.ratio_group_expansion_depends_on_success: float = ratio_group_expansion_depends_on_success
         self.growth_rate: float = growth_rate
         self.acceptance_threshold: float = acceptance_threshold
         self.coordination_factor: float = coordination_factor
@@ -822,6 +824,12 @@ class PeerGroupEnvironment(ParallelEnv):
         else:
             group_weights = np.ones(self.n_groups) / self.n_groups
 
+        uniform_weights = np.ones(self.n_groups) / self.n_groups
+
+        group_weights = (
+            (1 - self.ratio_group_expansion_depends_on_success) * uniform_weights +
+            self.ratio_group_expansion_depends_on_success * group_weights
+        )
         # grow active agents
         if self.growth_rate < 1:
             if self.timestep % (1 // self.growth_rate) == 0 and np.random.rand() < 0.7:

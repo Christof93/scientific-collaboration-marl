@@ -48,6 +48,7 @@ def run_experiment_step(args):
         effort_threshold=cp["mass_producer_effort_threshold"],
         coordination_factor=cp["coordination_factor"],
         continuation_probability=cp["continuation_probability"],
+        ratio_group_expansion_depends_on_success=cp.get("ratio_group_expansion_depends_on_success", 0),
         verbose=False
     )
     
@@ -71,10 +72,10 @@ def main():
     proportions = np.linspace(0.0, 1.0, 21) # 0.0, 0.05, 0.10, ..., 1.0
     
     # Use "all" calibrated params as specified in run_policy_simulation.py
-    REWARD_TYPE = "h_index"
+    REWARD_TYPE = "reputation"
     # try different reward types and make all plots
     cp = {k: v for k, v in CALIBRATED_PARAMS[REWARD_TYPE]}
-        
+    cp["ratio_group_expansion_depends_on_success"] = 0.0
     tasks = [(p, cp) for p in proportions]
     
     results = []

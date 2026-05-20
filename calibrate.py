@@ -263,7 +263,7 @@ def run_model_parallel(args):
     params, task_idx = args
     # Use worker name (e.g., "SpawnPoolWorker-1") as a stable ID for the log file
     worker_id = multiprocessing.current_process().name
-    acceptance, novelty, prestige, effort, rewardless, coordination, continuation = params
+    acceptance, novelty, prestige, effort, rewardless, coordination, continuation, ratio_group_success_influences_replacement  = params
     try:
         sim_run = run_simulation_with_policies(
             n_agents=800,
@@ -286,6 +286,7 @@ def run_model_parallel(args):
             effort_threshold=effort,
             coordination_factor=coordination,
             continuation_probability=continuation,
+            ratio_group_success_influences_replacement=ratio_group_success_influences_replacement,
             verbose=False,
         )
         run_projects = sim_run["projects"]
@@ -345,7 +346,7 @@ def run_calibration_worker(args):
     worker_id = multiprocessing.current_process().name
     print(f"Worker {worker_id} evaluating: {list(zip(names, theta))}")
     try:
-        if len(names) == 7:
+        if len(names) == 8:
             sim_run = run_simulation_with_policies(
                 n_agents=3_000,
                 start_agents=200,
@@ -416,7 +417,7 @@ def scaled_wasserstein_iqr(x, y):
 def calibrate(problem, real_data, reward_type, n_workers = 8, n_calls = 300):
     names = problem["names"]
     bounds = problem["bounds"]
-    if len(names) == 7:
+    if len(names) == 8:
         param_space = [
             Real(*bounds[0], name=names[0]),
             Real(*bounds[1], name=names[1]),
@@ -512,6 +513,30 @@ def save_real_world_data_only_orcid():
     # np.save("quality.npy", np.array(get_acceptance_rates_or()))
 
 def main():
+    sensitivity_problem = {
+        "num_vars": 8,
+        "names": [
+            "acceptance_threshold",
+            "orthodox_novelty_threshold",
+            "careerist_prestige_threshold",
+            "mass_producer_effort_threshold",
+            "max_rewardless_steps",
+            "coordination_factor",
+            "continuation_probability",
+            "ratio_group_success_influences_replacement",
+        ],
+        "bounds": [
+            [0.5, 1.5],  # Real
+            [0.4, 0.8],  # Real
+            [0.2, 0.6],  # Real
+            [10, 50],  # Integer (approx. continuous for SA)
+            [50, 500],  # Integer
+            [0.1, 0.9],  # Real
+            [0.2, 0.8],  # Real
+            [0.0, 1.0],  # Real
+        ],
+    }
+    sensitivity_analysis(sensitivity_problem)
     sweep_1_problem = {
         "num_vars": 7,
         "names": [
@@ -533,20 +558,6 @@ def main():
             [0.2, 0.8],  # Real
         ],
     }
-    sensitivity_analysis(sweep_1_problem)
-    sweep_2_problem = {
-        "num_vars": 3,
-        "names": [
-            "coordination_factor",
-            "mass_producer_effort_threshold",
-            "max_rewardless_steps",
-        ],
-        "bounds": [
-            [0.0, 1.0],  # Real
-            [10, 50],  # Integer (approx. continuous for SA)
-            [50, 500],  # Integer
-        ],
-    }
     real_data = {
         "papers_per_author": np.load("papers_per_author.npy"),
         "authors_per_paper": np.load("authors_per_paper.npy"),
@@ -560,8 +571,7 @@ def main():
     # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
     # print("RAW PUBCOUNT")
     # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
-    # print("ALL")
-    # calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=4, n_calls=300)
+    calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=4, n_calls=300)
 
 
 if __name__ == "__main__":

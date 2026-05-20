@@ -72,6 +72,7 @@ def run_simulation_with_policies(
     distribution_mode: str = "multiply",
     coordination_factor: float = 0.2,
     continuation_probability: float = 0.5,
+    ratio_group_expansion_depends_on_success: float = 0.0,
     verbose: bool = True,
 ):
     """
@@ -100,6 +101,7 @@ def run_simulation_with_policies(
         continuation_probability=continuation_probability,
         reward_type=reward_type,
         distribution_mode=distribution_mode,
+        ratio_group_expansion_depends_on_success=ratio_group_expansion_depends_on_success,
     )
     if group_policy_homogenous:
         # Create agent policy assignments
