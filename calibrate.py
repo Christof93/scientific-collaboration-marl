@@ -263,7 +263,7 @@ def run_model_parallel(args):
     params, task_idx = args
     # Use worker name (e.g., "SpawnPoolWorker-1") as a stable ID for the log file
     worker_id = multiprocessing.current_process().name
-    acceptance, novelty, prestige, effort, rewardless, coordination, continuation, ratio_group_success_influences_replacement  = params
+    acceptance, novelty, prestige, effort, rewardless, coordination, continuation, ratio_group_expansion_depends_on_success, prestige_eval_noise_factor  = params
     try:
         sim_run = run_simulation_with_policies(
             n_agents=800,
@@ -286,7 +286,8 @@ def run_model_parallel(args):
             effort_threshold=effort,
             coordination_factor=coordination,
             continuation_probability=continuation,
-            ratio_group_success_influences_replacement=ratio_group_success_influences_replacement,
+            ratio_group_expansion_depends_on_success=ratio_group_expansion_depends_on_success,
+            prestige_eval_noise_factor=prestige_eval_noise_factor,
             verbose=False,
         )
         run_projects = sim_run["projects"]
@@ -513,30 +514,32 @@ def save_real_world_data_only_orcid():
     # np.save("quality.npy", np.array(get_acceptance_rates_or()))
 
 def main():
-    sensitivity_problem = {
-        "num_vars": 8,
-        "names": [
-            "acceptance_threshold",
-            "orthodox_novelty_threshold",
-            "careerist_prestige_threshold",
-            "mass_producer_effort_threshold",
-            "max_rewardless_steps",
-            "coordination_factor",
-            "continuation_probability",
-            "ratio_group_success_influences_replacement",
-        ],
-        "bounds": [
-            [0.5, 1.5],  # Real
-            [0.4, 0.8],  # Real
-            [0.2, 0.6],  # Real
-            [10, 50],  # Integer (approx. continuous for SA)
-            [50, 500],  # Integer
-            [0.1, 0.9],  # Real
-            [0.2, 0.8],  # Real
-            [0.0, 1.0],  # Real
-        ],
-    }
-    sensitivity_analysis(sensitivity_problem)
+    # sensitivity_problem = {
+    #     "num_vars": 9,
+    #     "names": [
+    #         "acceptance_threshold",
+    #         "orthodox_novelty_threshold",
+    #         "careerist_prestige_threshold",
+    #         "mass_producer_effort_threshold",
+    #         "max_rewardless_steps",
+    #         "coordination_factor",
+    #         "continuation_probability",
+    #         "ratio_group_expansion_depends_on_success",
+    #         "prestige_eval_noise_factor"
+    #     ],
+    #     "bounds": [
+    #         [0.5, 1.5],  # Real
+    #         [0.4, 0.8],  # Real
+    #         [0.2, 0.6],  # Real
+    #         [10, 50],  # Integer (approx. continuous for SA)
+    #         [50, 500],  # Integer
+    #         [0.1, 0.9],  # Real
+    #         [0.2, 0.8],  # Real
+    #         [0.0, 1.0],  # Real
+    #         [0.0, 0.5]  #Real
+    #     ],
+    # }
+    # sensitivity_analysis(sensitivity_problem)
     sweep_1_problem = {
         "num_vars": 7,
         "names": [
@@ -565,12 +568,12 @@ def main():
         "quality": np.load("quality_histogram.npy"),
         "acceptance": np.load("acceptance_histogram.npy"),
     }
-    # print("REPUTATION")
-    # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=4, n_calls=300)
-    # print("H-INDEX")
-    # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
-    # print("RAW PUBCOUNT")
-    # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
+    # # print("REPUTATION")
+    # # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=4, n_calls=300)
+    # # print("H-INDEX")
+    # # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
+    # # print("RAW PUBCOUNT")
+    # # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
     calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=4, n_calls=300)
 
 

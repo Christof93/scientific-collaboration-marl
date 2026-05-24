@@ -84,12 +84,12 @@ class Project:
         return current_timestep >= (self.start_time + self.time_window)
 
     def calculate_quality(
-        self, topic_area: Area, relative_density: int, noise_factor: float = 0.5
+        self, topic_area: Area, relative_density: int, prestige_eval_noise_factor: float = 0.5
     ) -> float:
         """Calculate the final quality of the completed project."""
 
         # the higher the prestige the samller the noise
-        self.validation_noise = np.random.normal(1, noise_factor * (1 - self.prestige))
+        self.validation_noise = np.random.normal(1, prestige_eval_noise_factor * (1 - self.prestige))
         # Base quality based on effort and prestige
         self.effort_score = self.calculate_effort_score(self.validation_noise)
         self.novelty_score = self.calculate_novelty_score(relative_density)
@@ -103,10 +103,12 @@ class Project:
         return self.quality_score
 
     def calculate_effort_score(self, noise=1.0):
-        return (
-            1
-            - (max(0, self.required_effort - self.current_effort) * noise)
-            / self.required_effort
+        if self.required_effort <= 0:
+            return 0.0
+
+        return min(
+            1.0,
+            max(0, self.current_effort * noise) / self.required_effort
         )
 
     def calculate_novelty_score(self, relative_density):

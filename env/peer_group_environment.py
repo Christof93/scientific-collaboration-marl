@@ -42,6 +42,7 @@ class PeerGroupEnvironment(ParallelEnv):
         distribution_mode: str = "multiply",
         continuation_probability: float = 0.5,
         ratio_group_expansion_depends_on_success: float = 0.0,
+        prestige_eval_noise_factor: float = 0.0,
         render_mode: Optional[str] = None,
     ) -> None:
         self.n_agents: int = max_agents
@@ -57,6 +58,7 @@ class PeerGroupEnvironment(ParallelEnv):
         self.max_rewardless_steps: int = int(max_rewardless_steps)
         self.continuation_probability: float = continuation_probability
         self.ratio_group_expansion_depends_on_success: float = ratio_group_expansion_depends_on_success
+        self.prestige_eval_noise_factor: float = prestige_eval_noise_factor
         self.growth_rate: float = growth_rate
         self.acceptance_threshold: float = acceptance_threshold
         self.coordination_factor: float = coordination_factor
@@ -699,7 +701,7 @@ class PeerGroupEnvironment(ParallelEnv):
             quality = p.calculate_quality(
                 topic_area=self.area,
                 relative_density=sigmoid(local_density - self.global_density),
-                noise_factor=0.1,
+                prestige_eval_noise_factor=self.prestige_eval_noise_factor,
             )
             quality = np.clip(quality, 0, 1)
 
