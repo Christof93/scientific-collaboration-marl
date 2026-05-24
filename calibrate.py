@@ -341,63 +341,105 @@ def sensitivity_analysis(problem):
             json.dump(results, f, indent=2)
         print(f"Saved sensitivity results for {output_name} → {out_file}")
 
-# ---- Step 2–3: Define worker function ----
+# ---- Step 2–3: Define worker functions ----
+def run_single_seed_simulation(args):
+    theta, names, reward_type, seed, worker_id = args
+    try:
+        # Build kwargs dynamically
+        sim_kwargs = {
+            "n_agents": 3_000,
+            "start_agents": 200,
+            "max_steps": 600,
+            "n_groups": 20,
+            "max_peer_group_size": 150,
+            "policy_distribution": {
+                "careerist": 1 / 3,
+                "orthodox_scientist": 1 / 3,
+                "mass_producer": 1 / 3,
+            },
+            "output_file_prefix": f"calibration_{worker_id}_seed{seed}",
+            "group_policy_homogenous": 0,
+            "reward_type": reward_type,
+            "seed": seed,
+            "verbose": False,
+        }
+        
+        # Add calibrated parameters from theta dynamically if they are in names
+        param_mapping = {
+            "max_rewardless_steps": "max_rewardless_steps",
+            "acceptance_threshold": "acceptance_threshold",
+            "orthodox_novelty_threshold": "novelty_threshold",
+            "careerist_prestige_threshold": "prestige_threshold",
+            "mass_producer_effort_threshold": "effort_threshold",
+            "coordination_factor": "coordination_factor",
+            "continuation_probability": "continuation_probability",
+            "ratio_group_expansion_depends_on_success": "ratio_group_expansion_depends_on_success",
+            "prestige_eval_noise_factor": "prestige_eval_noise_factor",
+        }
+        
+        for name, value in zip(names, theta):
+            if name in param_mapping:
+                sim_kwargs[param_mapping[name]] = value
+                
+        sim_run = run_simulation_with_policies(**sim_kwargs)
+        return {"success": True, "sim_run": sim_run}
+    except Exception as e:
+        print(f"Error in single seed simulation (seed {seed}): {e}")
+        return {"success": False, "error": str(e)}
+
+
 def run_calibration_worker(args):
     theta, names, reward_type, real_data = args
     worker_id = multiprocessing.current_process().name
-    print(f"Worker {worker_id} evaluating: {list(zip(names, theta))}")
-    try:
-        if len(names) == 8:
-            sim_run = run_simulation_with_policies(
-                n_agents=3_000,
-                start_agents=200,
-                max_steps=600,
-                n_groups=20,
-                max_peer_group_size=150,
-                max_rewardless_steps=theta[names.index("max_rewardless_steps")],
-                policy_distribution={
-                    "careerist": 1 / 3,
-                    "orthodox_scientist": 1 / 3,
-                    "mass_producer": 1 / 3,
-                },
-                output_file_prefix=f"calibration_{worker_id}",
-                group_policy_homogenous=0,
-                reward_type=reward_type,
-                acceptance_threshold=theta[names.index("acceptance_threshold")],
-                novelty_threshold=theta[names.index("orthodox_novelty_threshold")],
-                prestige_threshold=theta[names.index("careerist_prestige_threshold")],
-                effort_threshold=theta[names.index("mass_producer_effort_threshold")],
-                coordination_factor=theta[names.index("coordination_factor")],
-                continuation_probability=theta[names.index("continuation_probability")],
-                verbose=False,
-            )
-        else:
-            print("calibration doesn't match parameter count!")
-    except Exception as e:
-        print(f"Error in worker {worker_id}: {e}")
-        return 1e6
-    # Check constraints (no population should die out)
-    pps = sim_run.get("policy_populations", {})
-    required_policies = ["careerist", "orthodox_scientist", "mass_producer"]
-    for pol in required_policies:
-        if pps.get(pol, 0) == 0:
-            print(f"Worker {worker_id}: Population of {pol} went to zero! Applying penalty.")
-            return 1e6  # Large penalty
+    print(f"Worker {worker_id} evaluating parameters: {list(zip(names, theta))}")
     
-    run_projects = sim_run["projects"]
-    sim_data = build_stats(run_projects)
+    seeds = [42, 43, 44, 45, 46]
+    
+    # Run the 5 seeds in parallel using 5 workers
+    inner_tasks = [(theta, names, reward_type, seed, worker_id) for seed in seeds]
+    with ProcessPoolExecutor(max_workers=5) as inner_executor:
+        results = list(inner_executor.map(run_single_seed_simulation, inner_tasks))
+        
+    all_sim_data = []
+    required_policies = ["careerist", "orthodox_scientist", "mass_producer"]
+    
+    for res in results:
+        if not res["success"]:
+            print(f"Worker {worker_id}: One of the seed runs failed. Applying penalty.")
+            return 1e6
+            
+        sim_run = res["sim_run"]
+        pps = sim_run.get("policy_populations", {})
+        for pol in required_policies:
+            if pps.get(pol, 0) == 0:
+                print(f"Worker {worker_id}: Population of {pol} went to zero in a seed run! Applying penalty.")
+                return 1e6  # Large penalty
+                
+        run_projects = sim_run["projects"]
+        sim_data = build_stats(run_projects)
+        all_sim_data.append(sim_data)
+        
+    # Calculate losses individually for each seed and compute mean + std
+    losses = []
+    for sim_data in all_sim_data:
+        d1 = scaled_wasserstein_iqr(truncate(real_data["papers_per_author"], 250), truncate(sim_data["papers_per_author"], 250))
+        d2 = scaled_wasserstein_iqr(truncate(real_data["authors_per_paper"], 15), truncate(sim_data["authors_per_paper"], 15))
+        d3 = scaled_wasserstein_iqr(truncate(real_data["lifespan"], 12), truncate(sim_data["lifespan"], 12))
+        d4 = scaled_wasserstein_iqr(real_data["quality"], sim_data["quality"])
+        sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
+        real_acceptance_rate = real_data["acceptance"].mean()
+        d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
+        
+        loss_val = (np.log1p(d1) + np.log1p(d2) + np.log1p(d4) + np.log1p(d4)) / 4 + (d5 * 0.2)
+        losses.append(loss_val)
+        
+    mean_loss = float(np.mean(losses))
+    std_loss = float(np.std(losses))
+    final_loss = mean_loss + 0.1 * std_loss
+    
+    print(f"Worker {worker_id} evaluated 5 seeds | Mean Loss: {round(mean_loss, 5)} | Std Loss: {round(std_loss, 5)} | Final Loss (with variance penalty): {round(final_loss, 5)}")
+    return final_loss
 
-    d1 = scaled_wasserstein_iqr(truncate(real_data["papers_per_author"], 250), truncate(sim_data["papers_per_author"], 250))
-    d2 = scaled_wasserstein_iqr(truncate(real_data["authors_per_paper"], 15), truncate(sim_data["authors_per_paper"], 15))
-    d3 = scaled_wasserstein_iqr(truncate(real_data["lifespan"], 12), truncate(sim_data["lifespan"], 12))
-    d4 = scaled_wasserstein_iqr(real_data["quality"], sim_data["quality"])
-    sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
-    real_acceptance_rate = real_data["acceptance"].mean()
-    d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-    print(np.log1p(d1), np.log1p(d2), np.log1p(d4), np.log1p(d4))
-    loss_val = (np.log1p(d1) + np.log1p(d2) + np.log1p(d4) + np.log1p(d4)) / 4 + (d5 * 0.2)
-    print(f"Worker {worker_id} result -> PPA: {round(d1, 5)}, APP: {round(d2, 5)}, LS: {round(d3, 5)}, PQ: {round(d4, 5)}, AR: {round(d5, 5)} | TOTAL LOSS: {round(loss_val, 5)}")
-    return loss_val
 
 def truncate(x, max_val):
     return x[x <= max_val]
@@ -418,22 +460,12 @@ def scaled_wasserstein_iqr(x, y):
 def calibrate(problem, real_data, reward_type, n_workers = 8, n_calls = 300):
     names = problem["names"]
     bounds = problem["bounds"]
-    if len(names) == 8:
-        param_space = [
-            Real(*bounds[0], name=names[0]),
-            Real(*bounds[1], name=names[1]),
-            Real(*bounds[2], name=names[2]),
-            Integer(*bounds[3], name=names[3]),
-            Integer(*bounds[4], name=names[4]),
-            Real(*bounds[5], name=names[5]),
-            Real(*bounds[6], name=names[6]),
-        ]
-    elif len(names) == 3:
-        param_space = [
-            Real(*bounds[0], name=names[0]),
-            Integer(*bounds[1], name=names[1]),
-            Integer(*bounds[2], name=names[2]),
-        ]
+    param_space = []
+    for name, b in zip(names, bounds):
+        if name in ["max_rewardless_steps", "mass_producer_effort_threshold"]:
+            param_space.append(Integer(*b, name=name))
+        else:
+            param_space.append(Real(*b, name=name))
 
     # ---- Step 2–3: Define loss function ----
     optimizer = Optimizer(
