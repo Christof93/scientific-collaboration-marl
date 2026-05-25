@@ -27,19 +27,77 @@ def _mask_allowed(mask_arr: Any, idx: int) -> bool:
 
 def _emergency_continue_any(running_projects: Dict[str, Any]) -> bool:
     """
-    figure out if there is too much work to begin new projects.
+    Determine if there is too much workload to begin new projects.
+    Uses realistic peer-fit-based effort estimates, accounts for attention limits, 
+    and robustly handles dead/contributor-less teams.
     """
     for proj in running_projects.values():
-        contributors = sum(proj.get("contributors", []))
-        if contributors < 1:
-            continue
-        time_left = proj.get("time_left")[0]
         required = proj.get("required_effort")[0]
         current = proj.get("current_effort")[0]
-        # max future effort is smaller than remaining required effort
-        if (time_left * contributors) < (required - current):
+        
+        # If project is already fully completed, it doesn't block us
+        if current >= required:
+            continue
+            
+        contributors = sum(proj.get("contributors", []))
+        
+        # If there are no active contributors but the project still needs effort,
+        # it is mathematically impossible to complete. Immediately block new projects.
+        if contributors < 1:
             return True
+            
+        time_left = proj.get("time_left")[0]
+        
+        # Instead of assuming 1.0 effort per step, we sum the actual peer_fit
+        # of the active contributors (non-contributors have fit set to 0.0).
+        max_effort_per_step = sum(proj.get("peer_fit", []))
+        
+        # Assuming agents split their attention among their active projects.
+        own_active_count = max(len(running_projects), 1)
+        estimated_attention_factor = 1.0 / own_active_count
+        
+        expected_future_effort = time_left * max_effort_per_step * estimated_attention_factor
+        
+        # If the expected future effort is strictly smaller than remaining required effort,
+        # the project is on track to fail -> return True to focus on current work.
+        if expected_future_effort < (required - current):
+            return True
+            
     return False
+
+
+def _should_block_new_project(running_projects: Dict[str, Any]) -> bool:
+    """
+    Determine if we should block choosing a new project due to existing workload.
+    """
+    if _emergency_continue_any(running_projects):
+        return True
+        
+    active_projects = []
+    for proj in running_projects.values():
+        time_left = proj.get("time_left")[0]
+        if time_left <= 0:
+            continue
+        active_projects.append(proj)
+        
+    if not active_projects:
+        return False
+        
+    total_ratio = 0.0
+    for proj in active_projects:
+        required = proj.get("required_effort")[0]
+        current = proj.get("current_effort")[0]
+        time_left = proj.get("time_left")[0]
+        
+        contributors = sum(proj.get("contributors", []))
+        n_contributors = max(contributors, 1)
+        time_left = max(time_left, 1)
+        
+        ratio = ((required - current) / n_contributors) / time_left
+        total_ratio += ratio
+        
+    mean_ratio = total_ratio / len(active_projects)
+    return mean_ratio >= 1.0
 
 
 def _select_effort_closest_deadline_under_required(
@@ -115,7 +173,7 @@ def careerist_policy(
 
     project_opportunities = list(observation.get("project_opportunities").values())
     current = observation.get("running_projects", {})
-    if _emergency_continue_any(current):
+    if _should_block_new_project(current):
         chosen_project = 0
     else:
         choose_project_mask = action_mask.get("choose_project")
@@ -176,7 +234,7 @@ def orthodox_scientist_policy(
 
     project_opportunities = list(observation.get("project_opportunities").values())
     current = observation.get("running_projects", {})
-    if _emergency_continue_any(current):
+    if _should_block_new_project(current):
         chosen_project = 0
     else:
         choose_project_mask = action_mask.get("choose_project")
@@ -234,9 +292,11 @@ def mass_producer_policy(
 ) -> Dict[str, Any]:
 
     project_opportunities = list(observation.get("project_opportunities").values())
-    # Efficiency: prestige / (effort * time). With binary space, accept if efficiency > 0 and allowed
+    current = observation.get("running_projects", {})
     choose_project_mask = action_mask.get("choose_project")
-    if len(project_opportunities) > 0:
+    if _should_block_new_project(current):
+        chosen_project = 0
+    elif len(project_opportunities) > 0:
         opp = project_opportunities[0]
         if opp is not None and opp.get("required_effort")[0] <= effort_threshold and _mask_allowed(choose_project_mask, 1):
             chosen_project = 1
