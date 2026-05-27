@@ -1,18 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 0.0710835520770655,
-    "orthodox_novelty_threshold": -8.174501488409235e-16,
-    "careerist_prestige_threshold": -0.0527026071295517,
-    "mass_producer_effort_threshold": 0.026990438917105706,
-    "max_rewardless_steps": -0.029735726416914667,
-    "policy_aligned_in_group": -9.48723296468871e-16
+    "acceptance_threshold": 0.04521311293546801,
+    "orthodox_novelty_threshold": -0.0046685252006067116,
+    "careerist_prestige_threshold": 0.007860617711280748,
+    "mass_producer_effort_threshold": 0.026303639648719984,
+    "max_rewardless_steps": 0.8510295092210919,
+    "coordination_factor": -0.012347162215295188,
+    "continuation_probability": -0.0018571053747555972,
+    "ratio_group_expansion_depends_on_success": -0.01631319467116168,
+    "prestige_eval_noise_factor": -0.027036353843767628
   },
   "ST": {
-    "acceptance_threshold": 0.7499723243107236,
-    "orthodox_novelty_threshold": 1.1206237244883852e-29,
-    "careerist_prestige_threshold": 0.2765080580585602,
-    "mass_producer_effort_threshold": 1.1278848341825396,
-    "max_rewardless_steps": 0.7340931493291646,
-    "policy_aligned_in_group": 6.096193061216817e-29
+    "acceptance_threshold": 0.06005778387556936,
+    "orthodox_novelty_threshold": 0.009564458397563598,
+    "careerist_prestige_threshold": 0.02723456579345216,
+    "mass_producer_effort_threshold": 0.027165073144700087,
+    "max_rewardless_steps": 0.958744542865005,
+    "coordination_factor": 0.01041050754846005,
+    "continuation_probability": 0.010758585650165495,
+    "ratio_group_expansion_depends_on_success": 0.004170555479844018,
+    "prestige_eval_noise_factor": 0.011296691423095159
   }
 }

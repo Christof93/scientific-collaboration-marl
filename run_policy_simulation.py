@@ -324,10 +324,7 @@ def run_all_reward_functions(parameters, r_type, seeds=range(10), n_workers=8, d
     print("All simulations completed.")
 
 CALIBRATED_PARAMS={
-    "reputation": [('acceptance_threshold', 0.9070562642422293), ('orthodox_novelty_threshold', 0.4661882540054239), ('careerist_prestige_threshold', 0.5288947013824785), ('mass_producer_effort_threshold', np.int64(16)), ('max_rewardless_steps', np.int64(53)), ('coordination_factor', 0.18377486003694873), ('continuation_probability', 0.4036963525119355)],
-    "raw_pubcount": [('acceptance_threshold', 0.7625441136962994), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.5563978708007807), ('mass_producer_effort_threshold', np.int64(12)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.58953459329011), ('continuation_probability', 0.21996776415961516)],
-    "h_index": [('acceptance_threshold', 0.7001955006534182), ('orthodox_novelty_threshold', 0.7569754628832838), ('careerist_prestige_threshold', 0.4949222510564053), ('mass_producer_effort_threshold', np.int64(21)), ('max_rewardless_steps', np.int64(64)), ('coordination_factor', 0.10039137685896896), ('continuation_probability', 0.2460463010038782)],
-    "all": [('acceptance_threshold', 1.1637780469746222), ('orthodox_novelty_threshold', 0.4), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(20)), ('max_rewardless_steps', np.int64(50)), ('coordination_factor', 0.1), ('continuation_probability', 0.5190629152756893)]
+    "all": [('acceptance_threshold', 1.2175201646013403), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.3969219494558963), ('mass_producer_effort_threshold', np.int64(18)), ('max_rewardless_steps', np.int64(116)), ('coordination_factor', 0.1), ('continuation_probability', 0.289677161118806)]
 }
 REWARD_TYPE = "all"
 DISTRIBUTION_MODE = "multiply"
@@ -361,14 +358,16 @@ if __name__ == "__main__":
     #     coordination_factor=cp["coordination_factor"],
     #     continuation_probability=cp["continuation_probability"],
     # )
+    
+    # Run simulation for all reward functions on random seeds in parallel
+    run_all_reward_functions(cp, r_type = "reputation", seeds=range(10), n_workers=10, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = "raw_pubcount", seeds=range(10), n_workers=10, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = "h_index", seeds=range(10), n_workers=10, distribution_modes=["multiply"])
+
+    # careerist vs random
     cp["policy_distribution"] = {
             "random": 0.5,
             "careerist": 0.5,
     }
     cp["log_prefix"] = "careerist_vs_random"
     run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=10, distribution_modes=["multiply"])
-    # Run simulation for all reward functions on random seeds in parallel
-    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=10, distribution_modes=["multiply"])
-    # run_all_reward_functions(cp, r_type = "reputation", seeds=range(10), n_workers=30, distribution_modes=["multiply"])
-    # run_all_reward_functions(cp, r_type = "raw_pubcount", seeds=range(10), n_workers=30, distribution_modes=["multiply"])
-    # run_all_reward_functions(cp, r_type = "h_index", seeds=range(10), n_workers=30, distribution_modes=["multiply"])
