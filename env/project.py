@@ -95,9 +95,9 @@ class Project:
         self.novelty_score = self.calculate_novelty_score(relative_density)
         self.societal_value_score = self.calculate_societal_value_score(topic_area)
         self.quality_score = (
-            1 / 3 * self.effort_score
-            + 1 / 3 * self.novelty_score
-            + 1 / 3 * self.societal_value_score
+            1 / 2 * self.effort_score
+            + 1 / 4 * self.novelty_score
+            + 1 / 4 * self.societal_value_score
         )
         # Add validation noise
         return self.quality_score
