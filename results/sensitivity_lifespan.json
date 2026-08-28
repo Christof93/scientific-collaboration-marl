@@ -1,24 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 0.04521311293546801,
-    "orthodox_novelty_threshold": -0.0046685252006067116,
-    "careerist_prestige_threshold": 0.007860617711280748,
-    "mass_producer_effort_threshold": 0.026303639648719984,
-    "max_rewardless_steps": 0.8510295092210919,
-    "coordination_factor": -0.012347162215295188,
-    "continuation_probability": -0.0018571053747555972,
-    "ratio_group_expansion_depends_on_success": -0.01631319467116168,
-    "prestige_eval_noise_factor": -0.027036353843767628
+    "acceptance_threshold": 0.016789307445578164,
+    "orthodox_novelty_threshold": -0.015338540589711338,
+    "careerist_prestige_threshold": -0.030306448105887694,
+    "mass_producer_effort_threshold": 0.01507562074294047,
+    "max_rewardless_steps": 0.8106289816177672,
+    "coordination_factor": -0.022106993017642903,
+    "continuation_probability": -0.0043262701451487065,
+    "ratio_group_expansion_depends_on_success": -0.00621991293213193,
+    "prestige_eval_noise_factor": -0.01004365753244062
   },
   "ST": {
-    "acceptance_threshold": 0.06005778387556936,
-    "orthodox_novelty_threshold": 0.009564458397563598,
-    "careerist_prestige_threshold": 0.02723456579345216,
-    "mass_producer_effort_threshold": 0.027165073144700087,
-    "max_rewardless_steps": 0.958744542865005,
-    "coordination_factor": 0.01041050754846005,
-    "continuation_probability": 0.010758585650165495,
-    "ratio_group_expansion_depends_on_success": 0.004170555479844018,
-    "prestige_eval_noise_factor": 0.011296691423095159
+    "acceptance_threshold": 0.0884251502579939,
+    "orthodox_novelty_threshold": 0.010463623915924798,
+    "careerist_prestige_threshold": 0.026493532088480123,
+    "mass_producer_effort_threshold": 0.029665003416940255,
+    "max_rewardless_steps": 0.8692645840734665,
+    "coordination_factor": 0.018330971867755133,
+    "continuation_probability": 0.01618091416458293,
+    "ratio_group_expansion_depends_on_success": 0.004718036171484307,
+    "prestige_eval_noise_factor": 0.012485346597110479
   }
 }

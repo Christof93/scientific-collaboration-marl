@@ -8,7 +8,8 @@ from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 from agent_policies import (create_mixed_policy_population,
                             create_per_group_policy_population,
-                            do_nothing_policy, get_policy_function)
+                            do_nothing_policy, get_policy_function,
+                            validate_proportions)
 from env.peer_group_environment import PeerGroupEnvironment
 from log_simulation import SimLog
 from stats_tracker import SimulationStats
@@ -86,13 +87,29 @@ def run_simulation_with_policies(
         output_file: File to save results
     """
 
+    if group_policy_homogenous:
+        # Create agent policy assignments
+        agent_to_group, agent_policies = create_per_group_policy_population(
+            n_agents, n_groups, policy_distribution, seed=seed
+        )
+    else:
+        agent_to_group, agent_policies = create_mixed_policy_population(
+            n_agents, n_groups, policy_distribution, seed=seed
+        )
+    if verbose:
+        print(
+            f"Agent policy distribution: {dict(zip(*np.unique(agent_policies, return_counts=True)))}"
+        )
+        validate_proportions(agent_to_group, agent_policies)
+
     # Create environment
     env = PeerGroupEnvironment(
         start_agents=start_agents,
         max_steps=max_steps,
         max_agents=n_agents,
         n_groups=n_groups,
-        max_peer_group_size=max_peer_group_size,
+        agent_to_group=agent_to_group,
+        max_peer_group_size=np.unique(agent_to_group, return_counts=True)[1].max(),
         n_projects_per_step=1,
         max_projects_per_agent=8,
         max_agent_age=750,
@@ -105,20 +122,6 @@ def run_simulation_with_policies(
         ratio_group_expansion_depends_on_success=ratio_group_expansion_depends_on_success,
         prestige_eval_noise_factor=prestige_eval_noise_factor,
     )
-    if group_policy_homogenous:
-        # Create agent policy assignments
-        agent_policies = create_per_group_policy_population(
-            n_agents, policy_distribution
-        )
-    else:
-        agent_policies = create_mixed_policy_population(
-            n_agents, policy_distribution, seed=seed
-        )
-    if verbose:
-        print(
-            f"Agent policy distribution: {dict(zip(*np.unique(agent_policies, return_counts=True)))}"
-        )
-
     # Initialize stats tracker
     stats = SimulationStats()
 
@@ -128,11 +131,14 @@ def run_simulation_with_policies(
         f"{output_file_prefix}_observations.jsonl",
         f"{output_file_prefix}_projects.json",
     )
-    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration") or output_file_prefix.startswith("tipping_point")):
         log.start()
 
     # Reset environment
     observations, infos = env.reset(seed=seed)
+    if verbose:
+        print([set([agent_policies[a] for a in group]) for group in env.peer_groups])
+        print(env.max_peer_group_size)
 
     # Simulation loop
     for step in range(max_steps):
@@ -168,7 +174,7 @@ def run_simulation_with_policies(
         # if step > 500:
         #     active_agent_1 = list(env.active_agents).index(1)
         #     print(env.action_masks[f"agent_{active_agent_1}"])
-        if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+        if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration") or output_file_prefix.startswith("tipping_point")):
             log.log_observation(
                 {
                     a: obs if env.active_agents[env.agent_to_id[a]] == 1 else None
@@ -198,10 +204,10 @@ def run_simulation_with_policies(
                 print(f"Simulation ended at step {step}")
             break
 
-    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration") or output_file_prefix.startswith("tipping_point")):
         env.area.save(f"log/{output_file_prefix}_area.pickle")
 
-    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration") or output_file_prefix.startswith("tipping_point")):
         log.log_projects(env.projects.values())
     # Calculate active agent populations
     active_mask = env.active_agents.astype(bool)
@@ -218,7 +224,7 @@ def run_simulation_with_policies(
         or {"careerist": 1 / 3, "orthodox_scientist": 1 / 3, "mass_producer": 1 / 3},
     }
 
-    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration")):
+    if not (output_file_prefix.startswith("sensitivity") or output_file_prefix.startswith("calibration") or output_file_prefix.startswith("tipping_point")):
         with open("log/" + output_file_prefix + "_summary.json", "w") as f:
             json.dump(results, f, indent=2)
 
@@ -324,7 +330,10 @@ def run_all_reward_functions(parameters, r_type, seeds=range(10), n_workers=8, d
     print("All simulations completed.")
 
 CALIBRATED_PARAMS={
-    "all": [('acceptance_threshold', 1.2175201646013403), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.3969219494558963), ('mass_producer_effort_threshold', np.int64(18)), ('max_rewardless_steps', np.int64(116)), ('coordination_factor', 0.1), ('continuation_probability', 0.289677161118806)]
+    ## old
+    # "all": [('acceptance_threshold', 1.2175201646013403), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.3969219494558963), ('mass_producer_effort_threshold', np.int64(18)), ('max_rewardless_steps', np.int64(116)), ('coordination_factor', 0.1), ('continuation_probability', 0.289677161118806)]
+    ## new
+    "all": [('acceptance_threshold', 1.1539105136226646), ('orthodox_novelty_threshold', 0.578552564431533), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(17)), ('max_rewardless_steps', np.int64(128)), ('coordination_factor', 0.1), ('continuation_probability', 0.2)]
 }
 REWARD_TYPE = "all"
 DISTRIBUTION_MODE = "multiply"
@@ -360,9 +369,10 @@ if __name__ == "__main__":
     # )
     
     # Run simulation for all reward functions on random seeds in parallel
-    run_all_reward_functions(cp, r_type = "reputation", seeds=range(10), n_workers=10, distribution_modes=["multiply"])
-    run_all_reward_functions(cp, r_type = "raw_pubcount", seeds=range(10), n_workers=10, distribution_modes=["multiply"])
-    run_all_reward_functions(cp, r_type = "h_index", seeds=range(10), n_workers=10, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = "reputation", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = "raw_pubcount", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = "h_index", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
+    # run_all_reward_functions(cp, r_type = "all", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
 
     # careerist vs random
     cp["policy_distribution"] = {
@@ -370,4 +380,5 @@ if __name__ == "__main__":
             "careerist": 0.5,
     }
     cp["log_prefix"] = "careerist_vs_random"
-    run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(10), n_workers=10, distribution_modes=["multiply"])
+    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(30), n_workers=30, distribution_modes=["multiply"])
+    ### python run_policy_simulation.py  95226.26s user 158.33s system 2534% cpu 1:02:43.74 total

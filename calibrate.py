@@ -8,8 +8,8 @@ from SALib.analyze import sobol as sobol_analyze
 from SALib.sample import sobol as sobol_sample
 from scipy.stats import wasserstein_distance
 # from some_simulator import run_simulation  # your simulator function
-from skopt import gp_minimize, Optimizer  # Bayesian optimization
-from skopt.space import Categorical, Integer, Real
+from skopt import Optimizer  # Bayesian optimization
+from skopt.space import Integer, Real
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing
 
@@ -243,8 +243,8 @@ def save_real_world_data():
     np.save("author_lifespan.npy", np.array(get_author_lifespans_openalex(authors)))
     np.save("papers_per_author.npy", np.array(get_papers_per_author_openalex(authors)))
     np.save("authors_per_paper.npy", np.array(get_authors_per_paper_openalex(papers)))
-    np.save("acceptance.npy", np.array(get_review_scores_or(driver=driver)))
-    np.save("quality.npy", np.array(get_acceptance_rates_or(driver=driver)))
+    np.save("quality.npy", np.array(get_review_scores_or(driver=driver)))
+    np.save("acceptance.npy", np.array(get_acceptance_rates_or(driver=driver)))
 
 
 def generate_proportions(step=0.1):
@@ -306,8 +306,10 @@ def run_model_parallel(args):
         return [np.nan] * 5
 
 def sensitivity_analysis(problem):
-    # --- Step 2: Sample parameter combinations ---
-    param_values = sobol_sample.sample(problem, 64, calc_second_order=False)
+    # --- Step 2: Sample parameter combinations deterministically ---
+    param_values = sobol_sample.sample(
+        problem, 64, calc_second_order=False, seed=42
+    )
     
     print(f"Starting Sensitivity Analysis with {len(param_values)} runs on parallel workers...")
     
@@ -321,6 +323,7 @@ def sensitivity_analysis(problem):
     for i in range(Y.shape[0]):
         if np.isnan(Y[i]).any():
             Y[i] = np.nanmean(Y, axis=0)
+            
     # --- Step 4: Sobol sensitivity analysis + Save results ---
     output_names = [
         "papers_per_author",
@@ -337,7 +340,7 @@ def sensitivity_analysis(problem):
             "ST": dict(zip(problem["names"], Si["ST"].tolist())),
         }
         out_file = f"sensitivity_{output_name}.json"
-        with open(out_file, "w") as f:
+        with open("results/" + out_file, "w") as f:
             json.dump(results, f, indent=2)
         print(f"Saved sensitivity results for {output_name} → {out_file}")
 
@@ -393,7 +396,7 @@ def run_calibration_worker(args):
     worker_id = multiprocessing.current_process().name
     print(f"Worker {worker_id} evaluating parameters: {list(zip(names, theta))}")
     
-    seeds = [42, 43, 44, 45, 46]
+    seeds = [0, 1, 2, 3, 4]
     
     # Run the 5 seeds in parallel using 5 workers
     inner_tasks = [(theta, names, reward_type, seed, worker_id) for seed in seeds]
@@ -429,8 +432,15 @@ def run_calibration_worker(args):
         sim_acceptance_rate = np.array(sim_data["acceptance"]).mean()
         real_acceptance_rate = real_data["acceptance"].mean()
         d5 = np.abs(real_acceptance_rate - sim_acceptance_rate)
-        
-        loss_val = (np.log1p(d1) + np.log1p(d2) + np.log1p(d4) + np.log1p(d4)) / 4 + (d5 * 0.2)
+        loss_val = (np.log1p(d1) + np.log1p(d2) + np.log1p(d3) + np.log1p(d4)) / 4 + (d5 * 0.2)
+        print(
+            f"d1={d1:.3f}, "
+            f"d2={d2:.3f}, "
+            f"d3={d3:.3f}, "
+            f"d4={d4:.3f}, "
+            f"d5={d5:.3f}, "
+            f"loss={loss_val:.3f}"
+        )
         losses.append(loss_val)
         
     mean_loss = float(np.mean(losses))
@@ -522,7 +532,7 @@ def plot_calibration_overlays(
         )
         ax.set_title(title)
         ax.set_xlabel(xlabel)
-        ax.set_ylabel("Probability density")
+        ax.set_ylabel("Probability mass")
         ax.legend()
 
     plt.tight_layout()
@@ -546,32 +556,32 @@ def save_real_world_data_only_orcid():
     # np.save("quality.npy", np.array(get_acceptance_rates_or()))
 
 def main():
-    sensitivity_problem = {
-        "num_vars": 9,
-        "names": [
-            "acceptance_threshold",
-            "orthodox_novelty_threshold",
-            "careerist_prestige_threshold",
-            "mass_producer_effort_threshold",
-            "max_rewardless_steps",
-            "coordination_factor",
-            "continuation_probability",
-            "ratio_group_expansion_depends_on_success",
-            "prestige_eval_noise_factor"
-        ],
-        "bounds": [
-            [0.5, 1.5],  # Real
-            [0.4, 0.8],  # Real
-            [0.2, 0.6],  # Real
-            [10, 50],  # Integer (approx. continuous for SA)
-            [50, 500],  # Integer
-            [0.1, 0.9],  # Real
-            [0.2, 0.8],  # Real
-            [0.0, 1.0],  # Real
-            [0.0, 0.5]  #Real
-        ],
-    }
-    sensitivity_analysis(sensitivity_problem)
+    # sensitivity_problem = {
+    #     "num_vars": 9,
+    #     "names": [
+    #         "acceptance_threshold",
+    #         "orthodox_novelty_threshold",
+    #         "careerist_prestige_threshold",
+    #         "mass_producer_effort_threshold",
+    #         "max_rewardless_steps",
+    #         "coordination_factor",
+    #         "continuation_probability",
+    #         "ratio_group_expansion_depends_on_success",
+    #         "prestige_eval_noise_factor"
+    #     ],
+    #     "bounds": [
+    #         [0.5, 1.5],  # Real
+    #         [0.4, 0.8],  # Real
+    #         [0.2, 0.6],  # Real
+    #         [10, 50],  # Integer (approx. continuous for SA)
+    #         [50, 500],  # Integer
+    #         [0.1, 0.9],  # Real
+    #         [0.2, 0.8],  # Real
+    #         [0.0, 1.0],  # Real
+    #         [0.0, 0.5]  #Real
+    #     ],
+    # }
+    # sensitivity_analysis(sensitivity_problem)
     sweep_1_problem = {
         "num_vars": 7,
         "names": [

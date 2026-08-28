@@ -1,24 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 0.055427686522493975,
-    "orthodox_novelty_threshold": -0.03606177974051352,
-    "careerist_prestige_threshold": 0.013465484216792308,
-    "mass_producer_effort_threshold": 0.01529951360448432,
-    "max_rewardless_steps": 0.24953359608144945,
-    "coordination_factor": 0.0529291024509123,
-    "continuation_probability": 0.06800681716400588,
-    "ratio_group_expansion_depends_on_success": -0.005487556840240478,
-    "prestige_eval_noise_factor": -0.07526506274123945
+    "acceptance_threshold": 0.0977361062308902,
+    "orthodox_novelty_threshold": 0.10554987557364749,
+    "careerist_prestige_threshold": -0.026499979581149115,
+    "mass_producer_effort_threshold": 0.21850912177745635,
+    "max_rewardless_steps": 0.4175238065086986,
+    "coordination_factor": 0.13986751319825635,
+    "continuation_probability": 0.23295732829253393,
+    "ratio_group_expansion_depends_on_success": -0.0005346486688543646,
+    "prestige_eval_noise_factor": 0.2212023712952925
   },
   "ST": {
-    "acceptance_threshold": 0.21262644080522025,
-    "orthodox_novelty_threshold": 0.1431683526173594,
-    "careerist_prestige_threshold": 0.2017483947055845,
-    "mass_producer_effort_threshold": 0.28059469065312087,
-    "max_rewardless_steps": 0.4884978382195215,
-    "coordination_factor": 0.21170509080361055,
-    "continuation_probability": 0.22618315400107922,
-    "ratio_group_expansion_depends_on_success": 0.09225701917356328,
-    "prestige_eval_noise_factor": 0.24246805047589598
+    "acceptance_threshold": 0.31550603782844117,
+    "orthodox_novelty_threshold": 0.12241185627532024,
+    "careerist_prestige_threshold": 0.23946303052160675,
+    "mass_producer_effort_threshold": 0.47453839495514794,
+    "max_rewardless_steps": 0.6651900273883422,
+    "coordination_factor": 0.2885823859610439,
+    "continuation_probability": 0.3031898791775551,
+    "ratio_group_expansion_depends_on_success": 0.04932904893766868,
+    "prestige_eval_noise_factor": 0.254899999753172
   }
 }

@@ -34,7 +34,7 @@ results = {}
 for filename, metric_label in METRICS.items():
     filepath = DATA_DIR / filename
 
-    with open(filepath, "r") as f:
+    with open("results" / filepath, "r") as f:
         data = json.load(f)
 
     results[metric_label] = data

@@ -1,24 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 1.002502779557799,
-    "orthodox_novelty_threshold": 0.003281737363035698,
-    "careerist_prestige_threshold": 0.03074782908199648,
-    "mass_producer_effort_threshold": 0.01031786049936914,
-    "max_rewardless_steps": -0.0010144997332885335,
-    "coordination_factor": -0.003249126048425376,
-    "continuation_probability": 0.2002527998462729,
-    "ratio_group_expansion_depends_on_success": 0.01228428699634225,
-    "prestige_eval_noise_factor": -0.00638446240315994
+    "acceptance_threshold": 0.5572401639560182,
+    "orthodox_novelty_threshold": 0.010412037022422252,
+    "careerist_prestige_threshold": 0.011756875280586122,
+    "mass_producer_effort_threshold": -0.015607278419495399,
+    "max_rewardless_steps": 0.01745770930221233,
+    "coordination_factor": 0.0157125153520891,
+    "continuation_probability": 0.020453132425420576,
+    "ratio_group_expansion_depends_on_success": 0.004168398015651776,
+    "prestige_eval_noise_factor": 0.009818063554417913
   },
   "ST": {
-    "acceptance_threshold": 0.949789725323665,
-    "orthodox_novelty_threshold": 0.00822936748694881,
-    "careerist_prestige_threshold": 0.02994161463053927,
-    "mass_producer_effort_threshold": 0.013354294820695957,
-    "max_rewardless_steps": 0.018185309956558655,
-    "coordination_factor": 0.009842136054106628,
-    "continuation_probability": 0.2475699411186419,
-    "ratio_group_expansion_depends_on_success": 0.006444869684442559,
-    "prestige_eval_noise_factor": 0.010050102427761042
+    "acceptance_threshold": 0.8946931389279319,
+    "orthodox_novelty_threshold": 0.007463221513229032,
+    "careerist_prestige_threshold": 0.028923509475910394,
+    "mass_producer_effort_threshold": 0.01565864037587249,
+    "max_rewardless_steps": 0.021979422398084418,
+    "coordination_factor": 0.012161155329095731,
+    "continuation_probability": 0.270847851472893,
+    "ratio_group_expansion_depends_on_success": 0.003785552960023845,
+    "prestige_eval_noise_factor": 0.014363026384342344
   }
 }
