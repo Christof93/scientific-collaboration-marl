@@ -31,6 +31,7 @@ class PeerGroupEnvironment(ParallelEnv):
         max_steps: int = 600,
         max_peer_group_size: int = 60,
         n_groups: int = 4,
+        agent_to_group: List[int] = None,
         n_projects_per_step: int = 1,
         max_projects_per_agent: int = 6,
         max_agent_age: int = 1000,
@@ -99,8 +100,11 @@ class PeerGroupEnvironment(ParallelEnv):
         self.terminated_agents = np.zeros(self.n_agents, dtype=np.int8)
 
         # Will be initialized in _init_peer_groups
+        if agent_to_group is not None:
+            self.agent_to_group = agent_to_group
+        else:
+            self.agent_to_group = {i % self.n_groups for i in self.n_agents}
         self.peer_groups: List[List[int]] = [[] for _ in range(n_groups)]
-        self.agent_peer_idx: List[int] = []
 
         # Will be initialized in _generate_projects
         self.open_projects: List[Dict[str, Any]] = []
@@ -127,6 +131,7 @@ class PeerGroupEnvironment(ParallelEnv):
             self.area.add_gaussian_area(
                 *self.area.random_gaussian_point(), sigma=0.1, value=value
             )
+            
 
     def _init_peer_groups(self) -> None:
         if self.n_agents < self.n_groups:
@@ -141,12 +146,7 @@ class PeerGroupEnvironment(ParallelEnv):
             self.area.random_gaussian_point() for _ in range(self.n_groups)
         ]
         for i in range(self.n_agents):
-            self.peer_groups[i % self.n_groups].append(i)
-        # Each agent has a fixed set of peers (not necessarily symmetric)
-        self.agent_peer_idx = []  # List of sets of peer agent ids for each agent
-        for i in range(self.n_agents):
-            # Peers are the all agents in the same peer group
-            self.agent_peer_idx.append(i % self.n_groups)
+            self.peer_groups[self.agent_to_group[i]].append(i)
 
     def _connect_peer_groups(self) -> None:
         # Pick two random groups.
@@ -333,7 +333,7 @@ class PeerGroupEnvironment(ParallelEnv):
         )
         mask["choose_project"][not_choosable_this_time] = 0
         # Peer collaboration: MultiBinary for peer group
-        peer_group = self.peer_groups[self.agent_peer_idx[idx]]
+        peer_group = self.peer_groups[self.agent_to_group[idx]]
         mask["collaborate_with"] = np.zeros(self.max_peer_group_size, dtype=np.int8)
         mask["collaborate_with"][: len(peer_group)] = np.where(
             self.active_agents[peer_group].astype(bool),
@@ -464,7 +464,7 @@ class PeerGroupEnvironment(ParallelEnv):
                 if p != generator_project.project_id
             ]
         else:
-            peer_group_idx = self.agent_peer_idx[new_project.contributors[0]]
+            peer_group_idx = self.agent_to_group[new_project.contributors[0]]
             new_kene = self.peer_group_centroids[peer_group_idx]
 
         # select 10-20 projects as citation which are in the area of novelty around the generator
@@ -810,7 +810,7 @@ class PeerGroupEnvironment(ParallelEnv):
             # replace
             if terminated:
                 self.active_agents[agent_id] = 0
-                group = self.agent_peer_idx[agent_id]
+                group = self.agent_to_group[agent_id]
                 agents_activated_in_step.append(self._activate_agent(group))
         # Calculate group weights based on combined reputation
         group_reputations = np.zeros(self.n_groups)
@@ -873,7 +873,7 @@ class PeerGroupEnvironment(ParallelEnv):
         idx = self.agent_to_id[agent]
         # Peer group: array of peer agent ids
         peer_group = np.array(
-            self.peer_groups[self.agent_peer_idx[idx]], dtype=np.int32
+            self.peer_groups[self.agent_to_group[idx]], dtype=np.int32
         )
         peer_group_obs = np.zeros(self.max_peer_group_size, dtype=np.int8)
         peer_reputation = np.zeros((self.max_peer_group_size), dtype=np.float32)
@@ -895,7 +895,7 @@ class PeerGroupEnvironment(ParallelEnv):
                 )
                 if len(centroids) == 0:
                     peer_centroids[i] = self.peer_group_centroids[
-                        self.agent_peer_idx[agent_i]
+                        self.agent_to_group[agent_i]
                     ]
                 else:
                     peer_centroids[i] = centroids.mean(axis=0)
