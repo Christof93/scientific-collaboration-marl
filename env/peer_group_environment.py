@@ -103,7 +103,7 @@ class PeerGroupEnvironment(ParallelEnv):
         if agent_to_group is not None:
             self.agent_to_group = agent_to_group
         else:
-            self.agent_to_group = {i % self.n_groups for i in self.n_agents}
+            self.agent_to_group = [i % self.n_groups for i in self.n_agents]
         self.peer_groups: List[List[int]] = [[] for _ in range(n_groups)]
 
         # Will be initialized in _generate_projects
@@ -256,7 +256,6 @@ class PeerGroupEnvironment(ParallelEnv):
             (self.n_agents, self.n_steps + 1), dtype=np.float32
         )
         self.agent_rewards.fill(np.nan)
-        self.agent_rewards[: self.starting_population_size, :] = 0
         self.agent_completed_projects = np.zeros(self.n_agents, dtype=np.int32)
         self.agent_successful_projects = [[] for _ in range(self.n_agents)]
         self.agent_active_projects = [
@@ -265,8 +264,6 @@ class PeerGroupEnvironment(ParallelEnv):
         ]
         self.agent_project_effort = [{} for _ in range(self.n_agents)]
         self.active_agents = np.zeros(self.n_agents, dtype=np.int8)
-        # activate a subset of agents equal to the starting population size
-        self.active_agents[: self.starting_population_size] = 1
         self.terminated_agents = np.zeros(self.n_agents, dtype=np.int8)
         self.distances = []
         self.global_density = 1
@@ -274,6 +271,13 @@ class PeerGroupEnvironment(ParallelEnv):
         # Reinitialize core structures
         self._init_project_topic_plane()
         self._init_peer_groups()
+        # activate a subset of agents equal to the starting population size
+        starting_agents_per_group = self.starting_population_size // self.n_groups
+        for g in self.peer_groups:
+            # Activate the first N agents belonging to group g
+            for agent_id in g[:starting_agents_per_group]:
+                self.active_agents[agent_id] = 1
+                self.agent_rewards[agent_id, :] = 0
         self._generate_projects()
         self.projects = {}
         self.agents = copy(self.possible_agents)
@@ -340,7 +344,7 @@ class PeerGroupEnvironment(ParallelEnv):
             2,  ## if active unmask
             mask["collaborate_with"][: len(peer_group)],  # else keep 0
         )
-        if sum(mask["collaborate_with"]) == 0:
+        if not np.any(mask["collaborate_with"]):
             print(f"{agent} can not collaborate!")
 
         # Effort: can only put effort into active projects
@@ -624,7 +628,6 @@ class PeerGroupEnvironment(ParallelEnv):
             )
 
             np.fill_diagonal(peer_group_intents, 0)  # no self collaboration
-
             for choice, _ in Counter(peer_group_choices).most_common():
                 if choice is not None:
                     # get all collaborators which took this choice
@@ -640,19 +643,6 @@ class PeerGroupEnvironment(ParallelEnv):
                     # Only keep edges where both i→j and j→i exist
                     collaborators_intents = (
                         collaborators_intents & collaborators_intents.T
-                    )
-                    not_enough_collaborators = np.sum(collaborators_intents, axis=0)
-                    not_enough_collaborators = not_enough_collaborators[
-                        not_enough_collaborators < len(collaborator_group)
-                    ]
-                    collaborators_intents = np.delete(
-                        collaborators_intents, not_enough_collaborators, axis=0
-                    )
-                    collaborators_intents = np.delete(
-                        collaborators_intents, not_enough_collaborators, axis=1
-                    )
-                    collaborator_group = np.delete(
-                        collaborator_group, not_enough_collaborators
                     )
 
                     self._find_project_setting(

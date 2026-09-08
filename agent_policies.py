@@ -8,7 +8,7 @@ instead of random sampling in the peer group environment simulation.
 2. orthodox_scientist: Chooses projects with good fit
 3. mass_producer: Chooses projects with low effort and short completion time
 """
-
+from collections import Counter, defaultdict
 from itertools import zip_longest
 from typing import Any, Dict, List
 
@@ -432,7 +432,7 @@ def get_policy_function(policy_name: str):
 
 
 def create_mixed_policy_population(
-    n_agents: int, policy_distribution: Dict[str, float] = None, seed=None
+    n_agents: int, n_groups: int, policy_distribution: Dict[str, float] = None, seed=None
 ) -> List[str]:
     if seed is not None:
         np.random.seed(seed)
@@ -442,6 +442,7 @@ def create_mixed_policy_population(
             "orthodox_scientist": 1 / 3,
             "mass_producer": 1 / 3,
         }
+    group_size = n_agents // n_groups
     total_proportion = sum(policy_distribution.values())
     if abs(total_proportion - 1.0) > 1e-6:
         raise ValueError(f"Policy distribution must sum to 1.0, got {total_proportion}")
@@ -450,33 +451,168 @@ def create_mixed_policy_population(
         n_policy_agents = int(n_agents * proportion)
         agent_policies.extend([policy_name] * n_policy_agents)
     while len(agent_policies) < n_agents:
-        agent_policies.append(list(policy_distribution.keys())[0])
+        agent_policies.append(policy_name)
     np.random.shuffle(agent_policies)
-    return agent_policies
 
+    agent_to_group = np.full(n_agents, -1, dtype=int)
+
+    for agent_id in range(n_agents):
+        agent_to_group[agent_id] = agent_id % n_groups
+    
+    return agent_to_group.tolist(), agent_policies
+
+
+# def create_per_group_policy_population(
+#     n_agents: int, policy_distribution: Dict[str, float] = None
+# ) -> List[str]:
+#     if policy_distribution is None:
+#         policy_distribution = {
+#             "careerist": 1 / 3,
+#             "orthodox_scientist": 1 / 3,
+#             "mass_producer": 1 / 3,
+#         }
+#     total_proportion = sum(policy_distribution.values())
+#     if abs(total_proportion - 1.0) > 1e-6:
+#         raise ValueError(f"Policy distribution must sum to 1.0, got {total_proportion}")
+#     policy_groups = []
+#     for policy_name, proportion in policy_distribution.items():
+#         if proportion > 0:
+#             n_policy_agents = int(n_agents * proportion)
+#             policy_groups.append([policy_name] * n_policy_agents)
+#     while sum([len(group) for group in policy_groups]) < n_agents:
+#         policy_groups[-1].append(list(policy_distribution.keys())[0])
+#     return interleave(policy_groups)
 
 def create_per_group_policy_population(
-    n_agents: int, policy_distribution: Dict[str, float] = None
-) -> List[str]:
-    if policy_distribution is None:
-        policy_distribution = {
-            "careerist": 1 / 3,
-            "orthodox_scientist": 1 / 3,
-            "mass_producer": 1 / 3,
-        }
-    total_proportion = sum(policy_distribution.values())
-    if abs(total_proportion - 1.0) > 1e-6:
-        raise ValueError(f"Policy distribution must sum to 1.0, got {total_proportion}")
-    policy_groups = []
-    for policy_name, proportion in policy_distribution.items():
-        if proportion > 0:
-            n_policy_agents = int(n_agents * proportion)
-            policy_groups.append([policy_name] * n_policy_agents)
-    while sum([len(group) for group in policy_groups]) < n_agents:
-        policy_groups[-1].append(list(policy_distribution.keys())[0])
-    return interleave(policy_groups)
+        n_agents: int,
+        n_groups: int,
+        policy_distribution: dict[str, float],
+        seed: int | None = None,
+    ) -> tuple[list[int], list[str]]:
+        """
+        Assign each agent to a peer group such that:
+        - every peer group has the same size
+        - every peer group is homogeneous with respect to policy
+        - the number of groups per policy follows policy_distribution
+        - agents are randomly distributed across groups
 
+        Returns:
+            agent_to_group:
+                List where agent_to_group[agent_id] is the group ID.
+
+            group_policies:
+                List where group_policies[group_id] is the policy of that group.
+        """
+
+        if n_agents % n_groups != 0:
+            raise ValueError(
+                f"n_agents ({n_agents}) must be divisible by "
+                f"n_groups ({n_groups}) for equal-sized groups."
+            )
+
+        if abs(sum(policy_distribution.values()) - 1.0) > 1e-6:
+            raise ValueError("Policy distribution must sum to 1.0")
+
+        rng = np.random.default_rng(seed)
+
+        max_group_size = n_agents // n_groups
+
+        policies = list(policy_distribution.keys())
+        proportions = np.array(
+            [policy_distribution[p] for p in policies],
+            dtype=float,
+        )
+
+        # agents per group
+        agent_policies = []
+        for policy_name, proportion in policy_distribution.items():
+            n_policy_agents = int(n_agents * proportion)
+            agent_policies.extend([policy_name] * n_policy_agents)
+        while len(agent_policies) < n_agents:
+            agent_policies.append(policy_name)
+
+        true_agents_per_policy = dict(zip(*np.unique(agent_policies, return_counts=True)))
+        group_counts = np.ones(len(policies), dtype=int)
+
+        # Remaining groups to distribute
+        remaining_groups = n_groups - len(policies)
+        if remaining_groups > 0:
+            additional_exact = proportions * remaining_groups
+
+            additional_counts = np.floor(additional_exact).astype(int)
+
+            group_counts += additional_counts
+
+            remaining = remaining_groups - additional_counts.sum()
+
+            fractional = additional_exact - additional_counts
+            order = np.argsort(-fractional)
+
+            for i in order[:remaining]:
+                group_counts[i] += 1
+                
+        assert group_counts.sum() == n_groups
+        agent_to_group = np.full(n_agents, -1, dtype=int)
+
+        currently_assigned = 0
+        current_group = 0
+        for policy_i, policy in enumerate(policies):
+            n_policy_agents = true_agents_per_policy[policy]
+            n_policy_groups = group_counts[policy_i]
+            current_group_size = n_policy_agents // n_policy_groups
+            
+            assigned = 0
+            for g in range(n_policy_groups):
+                start = currently_assigned + current_group_size * g
+                end = start + current_group_size
+                agent_to_group[start:end] = current_group
+                current_group += 1
+                assigned += current_group_size
+            remaining = n_policy_agents - assigned
+            agent_to_group[end:end+remaining] = current_group - 1
+            currently_assigned += assigned + remaining
+        assert np.all(agent_to_group >= 0)
+        assert np.all(agent_to_group < n_groups)
+        return agent_to_group.tolist(), agent_policies
+
+def validate_proportions(agent_to_group, agent_policies):
+    count = defaultdict(int)
+    ptype = defaultdict(set)
+    for i, policy in enumerate(agent_policies):
+        count[agent_to_group[i]] += 1
+        ptype[agent_to_group[i]] |= {policy}
+    for g, c in count.items():
+        print(g, c, ptype[g])
+    assert sum(count.values()) == 3000
+    print()
+    assert len(ptype) == 20
+    assert max([len(v) for v in ptype.values()]) == 1
+
+    print()
 
 if __name__ == "__main__":
     # Keep minimal manual check without noisy prints
-    print(create_per_group_policy_population(10))
+    agent_to_group, agent_policies = create_per_group_policy_population(3000, n_groups=20, policy_distribution = {
+            "careerist": 0.25,
+            "orthodox_scientist": 0.75/2,
+            "mass_producer": 0.75/2,
+        }
+    )
+    validate_proportions(agent_to_group, agent_policies)
+
+    agent_to_group, agent_policies = create_mixed_policy_population(3000, n_groups=20, policy_distribution = {
+                "careerist": 0.25,
+                "orthodox_scientist": 0.75/2,
+                "mass_producer": 0.75/2,
+            }
+        )
+    count = defaultdict(int)
+    ptype = defaultdict(set)
+    for i, policy in enumerate(agent_policies):
+        count[agent_to_group[i]] += 1
+        ptype[agent_to_group[i]] |= {policy}
+        
+    for g, c in count.items():
+        print(g, c, ptype[g])
+    print(Counter(agent_policies).most_common())
+    

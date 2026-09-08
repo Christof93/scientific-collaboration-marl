@@ -556,34 +556,8 @@ def save_real_world_data_only_orcid():
     # np.save("quality.npy", np.array(get_acceptance_rates_or()))
 
 def main():
-    # sensitivity_problem = {
-    #     "num_vars": 9,
-    #     "names": [
-    #         "acceptance_threshold",
-    #         "orthodox_novelty_threshold",
-    #         "careerist_prestige_threshold",
-    #         "mass_producer_effort_threshold",
-    #         "max_rewardless_steps",
-    #         "coordination_factor",
-    #         "continuation_probability",
-    #         "ratio_group_expansion_depends_on_success",
-    #         "prestige_eval_noise_factor"
-    #     ],
-    #     "bounds": [
-    #         [0.5, 1.5],  # Real
-    #         [0.4, 0.8],  # Real
-    #         [0.2, 0.6],  # Real
-    #         [10, 50],  # Integer (approx. continuous for SA)
-    #         [50, 500],  # Integer
-    #         [0.1, 0.9],  # Real
-    #         [0.2, 0.8],  # Real
-    #         [0.0, 1.0],  # Real
-    #         [0.0, 0.5]  #Real
-    #     ],
-    # }
-    # sensitivity_analysis(sensitivity_problem)
-    sweep_1_problem = {
-        "num_vars": 7,
+    sensitivity_problem = {
+        "num_vars": 9,
         "names": [
             "acceptance_threshold",
             "orthodox_novelty_threshold",
@@ -592,31 +566,57 @@ def main():
             "max_rewardless_steps",
             "coordination_factor",
             "continuation_probability",
+            "ratio_group_expansion_depends_on_success",
+            "prestige_eval_noise_factor"
         ],
         "bounds": [
             [0.5, 1.5],  # Real
-            [0.4, 0.8],  # Real
-            [0.2, 0.6],  # Real
-            [10, 50],  # Integer (approx. continuous for SA)
+            [0.15, 0.4],  # Real
+            [0.4, 0.6],  # Real
+            [17, 32],  # Integer (approx. continuous for SA)
             [50, 500],  # Integer
             [0.1, 0.9],  # Real
             [0.2, 0.8],  # Real
+            [0.0, 1.0],  # Real
+            [0.0, 0.5]  #Real
         ],
     }
-    real_data = {
-        "papers_per_author": np.load("papers_per_author.npy"),
-        "authors_per_paper": np.load("authors_per_paper.npy"),
-        "lifespan": np.load("author_lifespan.npy"),
-        "quality": np.load("quality_histogram.npy"),
-        "acceptance": np.load("acceptance_histogram.npy"),
-    }
-    # # print("REPUTATION")
-    # # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=4, n_calls=300)
-    # # print("H-INDEX")
-    # # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
-    # # print("RAW PUBCOUNT")
-    # # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
-    calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=5, n_calls=300)
+    sensitivity_analysis(sensitivity_problem)
+    # sweep_1_problem = {
+    #     "num_vars": 7,
+    #     "names": [
+    #         "acceptance_threshold",
+    #         "orthodox_novelty_threshold",
+    #         "careerist_prestige_threshold",
+    #         "mass_producer_effort_threshold",
+    #         "max_rewardless_steps",
+    #         "coordination_factor",
+    #         "continuation_probability",
+    #     ],
+    #     "bounds": [
+    #         [0.5, 1.5],  # Real
+    #         [0.15, 0.4],  # Real
+    #         [0.4, 0.6],  # Real
+    #         [17, 32],  # Integer (approx. continuous for SA)
+    #         [50, 500],  # Integer
+    #         [0.1, 0.9],  # Real
+    #         [0.2, 0.8],  # Real
+    #     ],
+    # }
+    # real_data = {
+    #     "papers_per_author": np.load("papers_per_author.npy"),
+    #     "authors_per_paper": np.load("authors_per_paper.npy"),
+    #     "lifespan": np.load("author_lifespan.npy"),
+    #     "quality": np.load("quality_histogram.npy"),
+    #     "acceptance": np.load("acceptance_histogram.npy"),
+    # }
+    # # # print("REPUTATION")
+    # # # calibrate(sweep_1_problem, real_data, reward_type="reputation", n_workers=4, n_calls=300)
+    # # # print("H-INDEX")
+    # # # calibrate(sweep_1_problem, real_data, reward_type="h_index", n_workers=4, n_calls=300)
+    # # # print("RAW PUBCOUNT")
+    # # # calibrate(sweep_1_problem, real_data, reward_type="raw_pubcount", n_workers=4, n_calls=300)
+    # calibrate(sweep_1_problem, real_data, reward_type="all", n_workers=5, n_calls=300)
 
 
 if __name__ == "__main__":

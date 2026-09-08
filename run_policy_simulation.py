@@ -137,7 +137,6 @@ def run_simulation_with_policies(
     # Reset environment
     observations, infos = env.reset(seed=seed)
     if verbose:
-        print([set([agent_policies[a] for a in group]) for group in env.peer_groups])
         print(env.max_peer_group_size)
 
     # Simulation loop
@@ -333,7 +332,11 @@ CALIBRATED_PARAMS={
     ## old
     # "all": [('acceptance_threshold', 1.2175201646013403), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.3969219494558963), ('mass_producer_effort_threshold', np.int64(18)), ('max_rewardless_steps', np.int64(116)), ('coordination_factor', 0.1), ('continuation_probability', 0.289677161118806)]
     ## new
-    "all": [('acceptance_threshold', 1.1539105136226646), ('orthodox_novelty_threshold', 0.578552564431533), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(17)), ('max_rewardless_steps', np.int64(128)), ('coordination_factor', 0.1), ('continuation_probability', 0.2)]
+    # "all": [('acceptance_threshold', 1.1539105136226646), ('orthodox_novelty_threshold', 0.578552564431533), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(17)), ('max_rewardless_steps', np.int64(128)), ('coordination_factor', 0.1), ('continuation_probability', 0.2)]
+    ## homogenous:
+    # "all": [('acceptance_threshold', 1.3452738347320163), ('orthodox_novelty_threshold', 0.7390895253057179), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(50)), ('max_rewardless_steps', np.int64(118)), ('coordination_factor', 0.1), ('continuation_probability', 0.593499833132961)]
+    ## heterogenous
+    "all":[('acceptance_threshold', 1.2110517170409714), ('orthodox_novelty_threshold', 0.15), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(17)), ('max_rewardless_steps', np.int64(84)), ('coordination_factor', 0.1), ('continuation_probability', 0.28098555154267013)]
 }
 REWARD_TYPE = "all"
 DISTRIBUTION_MODE = "multiply"
@@ -372,7 +375,7 @@ if __name__ == "__main__":
     run_all_reward_functions(cp, r_type = "reputation", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
     run_all_reward_functions(cp, r_type = "raw_pubcount", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
     run_all_reward_functions(cp, r_type = "h_index", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
-    # run_all_reward_functions(cp, r_type = "all", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = "all", seeds=range(30), n_workers=30, distribution_modes=["multiply"])
 
     # careerist vs random
     cp["policy_distribution"] = {
@@ -380,5 +383,5 @@ if __name__ == "__main__":
             "careerist": 0.5,
     }
     cp["log_prefix"] = "careerist_vs_random"
-    # run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(30), n_workers=30, distribution_modes=["multiply"])
+    run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(30), n_workers=30, distribution_modes=["multiply"])
     ### python run_policy_simulation.py  95226.26s user 158.33s system 2534% cpu 1:02:43.74 total
