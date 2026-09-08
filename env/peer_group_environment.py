@@ -103,7 +103,7 @@ class PeerGroupEnvironment(ParallelEnv):
         if agent_to_group is not None:
             self.agent_to_group = agent_to_group
         else:
-            self.agent_to_group = [i % self.n_groups for i in self.n_agents]
+            self.agent_to_group = [i % self.n_groups for i in range(self.n_agents)]
         self.peer_groups: List[List[int]] = [[] for _ in range(n_groups)]
 
         # Will be initialized in _generate_projects
@@ -639,7 +639,6 @@ class PeerGroupEnvironment(ParallelEnv):
                     collaborators_intents = peer_group_intents[
                         np.ix_(potential_collaborators, potential_collaborators)
                     ]
-                    ## if not enough peers chose the project to form the group don't start
                     # Only keep edges where both i→j and j→i exist
                     collaborators_intents = (
                         collaborators_intents & collaborators_intents.T

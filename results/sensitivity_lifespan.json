@@ -1,24 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 0.016789307445578164,
-    "orthodox_novelty_threshold": -0.015338540589711338,
-    "careerist_prestige_threshold": -0.030306448105887694,
-    "mass_producer_effort_threshold": 0.01507562074294047,
-    "max_rewardless_steps": 0.8106289816177672,
-    "coordination_factor": -0.022106993017642903,
-    "continuation_probability": -0.0043262701451487065,
-    "ratio_group_expansion_depends_on_success": -0.00621991293213193,
-    "prestige_eval_noise_factor": -0.01004365753244062
+    "acceptance_threshold": 0.006017130937369808,
+    "orthodox_novelty_threshold": 0.023584216590805028,
+    "careerist_prestige_threshold": 0.03507983791064287,
+    "mass_producer_effort_threshold": 0.022834814080544313,
+    "max_rewardless_steps": 0.8279523204080858,
+    "coordination_factor": 0.008782609598964403,
+    "continuation_probability": 0.05303526263124404,
+    "ratio_group_expansion_depends_on_success": 0.005718210353896741,
+    "prestige_eval_noise_factor": 0.011218608421783703
   },
   "ST": {
-    "acceptance_threshold": 0.0884251502579939,
-    "orthodox_novelty_threshold": 0.010463623915924798,
-    "careerist_prestige_threshold": 0.026493532088480123,
-    "mass_producer_effort_threshold": 0.029665003416940255,
-    "max_rewardless_steps": 0.8692645840734665,
-    "coordination_factor": 0.018330971867755133,
-    "continuation_probability": 0.01618091416458293,
-    "ratio_group_expansion_depends_on_success": 0.004718036171484307,
-    "prestige_eval_noise_factor": 0.012485346597110479
+    "acceptance_threshold": 0.0760394960497592,
+    "orthodox_novelty_threshold": 0.014233508175072143,
+    "careerist_prestige_threshold": 0.014841411098970338,
+    "mass_producer_effort_threshold": 0.01826448874661345,
+    "max_rewardless_steps": 0.9266166358056958,
+    "coordination_factor": 0.013381179857664701,
+    "continuation_probability": 0.01728161546187811,
+    "ratio_group_expansion_depends_on_success": 0.0064775338897542075,
+    "prestige_eval_noise_factor": 0.012397636615868872
   }
 }

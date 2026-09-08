@@ -1,24 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 0.14365967160359264,
-    "orthodox_novelty_threshold": -0.019556595261071456,
-    "careerist_prestige_threshold": 0.005621407714184193,
-    "mass_producer_effort_threshold": 0.12172690570202654,
-    "max_rewardless_steps": 0.606539142636304,
-    "coordination_factor": -0.009842144579846553,
-    "continuation_probability": -0.02178978295704871,
-    "ratio_group_expansion_depends_on_success": 0.0029643041735487306,
-    "prestige_eval_noise_factor": -0.010767191784224792
+    "acceptance_threshold": 0.1752009028952709,
+    "orthodox_novelty_threshold": 0.0434185592959852,
+    "careerist_prestige_threshold": 0.037206903649713574,
+    "mass_producer_effort_threshold": 0.06901445513702165,
+    "max_rewardless_steps": 0.5870691059334653,
+    "coordination_factor": 0.03711686008587721,
+    "continuation_probability": 0.09803895844886068,
+    "ratio_group_expansion_depends_on_success": 0.023448619104423286,
+    "prestige_eval_noise_factor": 0.01794218510064396
   },
   "ST": {
-    "acceptance_threshold": 0.1941418060834088,
-    "orthodox_novelty_threshold": 0.019029600135930042,
-    "careerist_prestige_threshold": 0.07194153591469081,
-    "mass_producer_effort_threshold": 0.13086639508092385,
-    "max_rewardless_steps": 0.6523710384396499,
-    "coordination_factor": 0.04875131762356341,
-    "continuation_probability": 0.05098502448773846,
-    "ratio_group_expansion_depends_on_success": 0.007866288094552238,
-    "prestige_eval_noise_factor": 0.027407250520686842
+    "acceptance_threshold": 0.2142384179896022,
+    "orthodox_novelty_threshold": 0.03398978251962227,
+    "careerist_prestige_threshold": 0.06400442394235951,
+    "mass_producer_effort_threshold": 0.07567635329699193,
+    "max_rewardless_steps": 0.708928996091436,
+    "coordination_factor": 0.048100102192111284,
+    "continuation_probability": 0.06307404371320888,
+    "ratio_group_expansion_depends_on_success": 0.013085250035892367,
+    "prestige_eval_noise_factor": 0.03198733055954182
   }
 }

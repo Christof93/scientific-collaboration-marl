@@ -1,24 +1,24 @@
 {
   "S1": {
-    "acceptance_threshold": 0.5572401639560182,
-    "orthodox_novelty_threshold": 0.010412037022422252,
-    "careerist_prestige_threshold": 0.011756875280586122,
-    "mass_producer_effort_threshold": -0.015607278419495399,
-    "max_rewardless_steps": 0.01745770930221233,
-    "coordination_factor": 0.0157125153520891,
-    "continuation_probability": 0.020453132425420576,
-    "ratio_group_expansion_depends_on_success": 0.004168398015651776,
-    "prestige_eval_noise_factor": 0.009818063554417913
+    "acceptance_threshold": 0.48547565261924347,
+    "orthodox_novelty_threshold": -0.005752640909103368,
+    "careerist_prestige_threshold": -0.0004992112327718094,
+    "mass_producer_effort_threshold": -0.0021607387562282776,
+    "max_rewardless_steps": 0.008984885754208397,
+    "coordination_factor": 0.008134978532885246,
+    "continuation_probability": 0.004015460776342446,
+    "ratio_group_expansion_depends_on_success": -0.002821785951201661,
+    "prestige_eval_noise_factor": -0.0176543157714055
   },
   "ST": {
-    "acceptance_threshold": 0.8946931389279319,
-    "orthodox_novelty_threshold": 0.007463221513229032,
-    "careerist_prestige_threshold": 0.028923509475910394,
-    "mass_producer_effort_threshold": 0.01565864037587249,
-    "max_rewardless_steps": 0.021979422398084418,
-    "coordination_factor": 0.012161155329095731,
-    "continuation_probability": 0.270847851472893,
-    "ratio_group_expansion_depends_on_success": 0.003785552960023845,
-    "prestige_eval_noise_factor": 0.014363026384342344
+    "acceptance_threshold": 0.8824884351824707,
+    "orthodox_novelty_threshold": 0.00864928166692952,
+    "careerist_prestige_threshold": 0.016592274293506706,
+    "mass_producer_effort_threshold": 0.012428432052441523,
+    "max_rewardless_steps": 0.010841796675874916,
+    "coordination_factor": 0.016853886005198136,
+    "continuation_probability": 0.25802819591141796,
+    "ratio_group_expansion_depends_on_success": 0.004127786464822235,
+    "prestige_eval_noise_factor": 0.012708481898623152
   }
 }
