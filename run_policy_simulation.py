@@ -1,11 +1,13 @@
 """
-Example script showing how to use the agent policies with the peer group environment.
+script to run the peer group environment experiments.
 """
 
 import json
 from concurrent.futures import ProcessPoolExecutor
 
 import numpy as np
+import pandas as pd
+
 from agent_policies import (create_mixed_policy_population,
                             create_per_group_policy_population,
                             do_nothing_policy, get_policy_function,
@@ -13,46 +15,6 @@ from agent_policies import (create_mixed_policy_population,
 from env.peer_group_environment import PeerGroupEnvironment
 from log_simulation import SimLog
 from stats_tracker import SimulationStats
-
-# Define different policy distributions to test
-POLICY_CONFIGS = {
-    "All Careerist": {
-        "careerist": 1.0,
-        "orthodox_scientist": 0.0,
-        "mass_producer": 0.0,
-    },
-    "All Orthodox": {
-        "careerist": 0.0,
-        "orthodox_scientist": 1.0,
-        "mass_producer": 0.0,
-    },
-    "All Mass Producer": {
-        "careerist": 0.0,
-        "orthodox_scientist": 0.0,
-        "mass_producer": 1.0,
-    },
-    "Balanced": {
-        "careerist": 1 / 3,
-        "orthodox_scientist": 1 / 3,
-        "mass_producer": 1 / 3,
-    },
-    "Careerist Heavy": {
-        "careerist": 0.5,
-        "orthodox_scientist": 0.5,
-        "mass_producer": 0.0,
-    },
-    "Orthodox Heavy": {
-        "careerist": 0.5,
-        "orthodox_scientist": 0.0,
-        "mass_producer": 0.5,
-    },
-    "Mass Producer Heavy": {
-        "careerist": 0.5,
-        "orthodox_scientist": 0.0,
-        "mass_producer": 0.5,
-    },
-}
-
 
 def run_simulation_with_policies(
     n_agents: int = 100,
@@ -240,42 +202,6 @@ def run_simulation_with_policies(
     return results
 
 
-def compare_policy_performances():
-    """Compare the performance of different policy distributions."""
-
-    results = {}
-
-    for config_name, policy_dist in POLICY_CONFIGS.items():
-        print(f"\n{'='*50}")
-        print(f"Testing: {config_name}")
-        print(f"{'='*50}")
-
-        result = run_simulation_with_policies(
-            n_agents=2_000,
-            start_agents=100,
-            max_steps=5_000,
-            n_groups=50,
-            max_peer_group_size=100,
-            policy_distribution=policy_dist,
-            output_file_prefix=f"policy_{config_name.lower().replace(' ', '_')}",
-        )
-
-        results[config_name] = result["final_stats"]
-
-    # Print comparison
-    print(f"\n{'='*80}")
-    print("POLICY COMPARISON SUMMARY")
-    print(f"{'='*80}")
-
-    for config_name, stats in results.items():
-        success_rate = stats["successful_projects"] / max(stats["finished_projects"], 1)
-        print(
-            f"{config_name:20} | Success Rate: {success_rate:.3f} | "
-            f"Finished: {stats['finished_projects']:3d} | "
-            f"Rewards: {stats['total_rewards_distributed']:6.2f}"
-        )
-
-
 def run_simulation_worker(args):
     """Worker function for parallel simulation runs."""
     params, seed, reward_type, distribution_mode = args
@@ -328,14 +254,167 @@ def run_all_reward_functions(parameters, r_type, seeds=range(10), n_workers=8, d
 
     print("All simulations completed.")
 
+def build_reward_summary_by_archetype(reward_steps, agents, seed, strategy):
+    """
+    Returns a DataFrame with rows:
+      step, archetype, mean_reward, std_reward, n_agents, seed, strategy
+
+    Raises:
+        ValueError if any agent has no archetype mapping.
+    """
+    # === 1. Build agent_id -> archetype map ===
+    agent_archetype = {}
+    for a in agents:
+        if not isinstance(a, dict):
+            continue
+        for agent_id, v in a.items():
+            if v is None:
+                continue
+            if isinstance(v, dict) and "archetype" in v:
+                agent_archetype[agent_id] = v["archetype"]
+
+    if not agent_archetype:
+        raise ValueError("No archetypes found in agents data.")
+
+    # === 2. Build per-step stats grouped by archetype ===
+    records = []
+    for step_idx, step in enumerate(reward_steps):
+        if not isinstance(step, dict):
+            continue
+
+        # Gather rewards per archetype for this step
+        arch_rewards = {}
+        for agent_id, data in step.items():
+            if data is None:
+                continue
+
+            # Every agent MUST have an archetype
+            if agent_id not in agent_archetype:
+                raise ValueError(f"Missing archetype for agent_id '{agent_id}' at step {step_idx}")
+
+            obs = data.get("observation", {}) if isinstance(data, dict) else {}
+            if "accumulated_rewards" not in obs:
+                continue
+
+            reward = obs["accumulated_rewards"][0]
+            archetype = agent_archetype[agent_id]
+            arch_rewards.setdefault(archetype, []).append(reward)
+
+        # Compute mean/std per archetype
+        for archetype, rewards in arch_rewards.items():
+            s = pd.Series(rewards)
+            records.append({
+                "step": step_idx,
+                "archetype": archetype,
+                "mean_reward": float(s.mean()),
+                "std_reward": float(s.std(ddof=1)),  # sample std
+                "n_agents": len(rewards),
+                "seed": int(seed),
+                "strategy": strategy,
+            })
+
+    return pd.DataFrame(records)
+
+def build_reward_dataframe(reward_steps, agents, seed):
+    """
+    Builds a DataFrame of accumulated rewards per agent per step,
+    annotated with archetype.
+    """
+    agent_archetype = {}
+    for a in agents:
+        for k, v in a.items():
+            if v is not None:
+                agent_archetype[k] = v["archetype"]
+
+    records = []
+    for step_idx, step in enumerate(reward_steps):
+        for agent_id, data in step.items():
+            if data is not None:
+                data = data.get("observation", None)
+                if data and "accumulated_rewards" in data:
+                    archetype = agent_archetype.get(agent_id, None)
+                    if archetype is not None:
+                        records.append({
+                            "step": step_idx,
+                            "archetype": archetype,
+                            "agent_id": agent_id,
+                            "accumulated_rewards": data["accumulated_rewards"][0],
+                            "h_index": data["peer_h_index"][0],
+                            "age": data["age"][0],
+                            # "accumulated_citations": len(data.get("citations", [])),
+                            # "societal_value": data['societal_value_score'],
+                            "seed": seed,
+                        })
+
+    return pd.DataFrame(records)
+
+def save_results():
+    ## save trajectories
+    dfs_all = {}
+    write_files = True
+    name = "multiply"
+    for reward_type in [
+        "all",
+        "raw_pubcount", 
+        "reputation", 
+        "h_index"
+    ]:
+        all_summaries = []
+        all_rewards = []
+        for seed in range(30):
+            try:
+                with open(f"log/balanced_{reward_type}_{name}_seed{seed}_actions.jsonl", "r") as f:
+                    balanced_actions = [json.loads(line) for line in f]
+                with open(f"log/balanced_{reward_type}_{name}_seed{seed}_observations.jsonl", "r") as f:
+                    balanced_observations = [json.loads(line) for line in f]
+                df_all = build_reward_dataframe(balanced_observations, balanced_actions, seed)
+                all_rewards.append(df_all)
+            except FileNotFoundError:
+                print("log files of 30 seed runs could not be located!")
+                write_files = False
+                break
+        df_all = pd.concat(all_rewards, ignore_index=True)
+        dfs_all[reward_type] = df_all
+        if write_files:
+            df_all.to_parquet(f"results/reward_trajectories_{reward_type}_{name}.parquet", index=False)
+            print(f"Saved {name} simulation to reward_trajectories_{reward_type}_{name}.parquet "
+                    f"({len(df_all)} records).")
+    ## save summaries
+    df_summary_all = {}
+    dfs_summary = {}
+    write_files = True
+    name = "multiply"
+    for reward_type in [
+        "raw_pubcount", 
+        "reputation", 
+        "h_index",
+        "all"
+    ]:
+        all_summaries = []
+        all_rewards = []
+        for seed in range(30):
+            try:
+                with open(f"log/balanced_{reward_type}_{name}_seed{seed}_actions.jsonl", "r") as f:
+                    balanced_actions = [json.loads(line) for line in f]
+                with open(f"log/balanced_{reward_type}_{name}_seed{seed}_observations.jsonl", "r") as f:
+                    balanced_observations = [json.loads(line) for line in f]
+
+                df_summary = build_reward_summary_by_archetype(
+                    balanced_observations, balanced_actions, seed, reward_type
+                )
+                all_summaries.append(df_summary)
+            except FileNotFoundError:
+                print("log files of 30 seed runs could not be located!")
+                write_files = False
+                break
+        df_summary_all = pd.concat(all_summaries, ignore_index=True)
+        dfs_summary[reward_type] = df_summary_all
+        if write_files:
+            df_summary_all.to_parquet(f"results/reward_summary_by_archetype_{reward_type}_{name}.parquet", index=False)
+            print(f"Saved {name} summary to reward_summary_by_archetype_{reward_type}_{name}.parquet "
+                f"({len(df_summary_all)} records across {len(all_summaries)} seeds).")
+
 CALIBRATED_PARAMS={
-    ## old
-    # "all": [('acceptance_threshold', 1.2175201646013403), ('orthodox_novelty_threshold', 0.8), ('careerist_prestige_threshold', 0.3969219494558963), ('mass_producer_effort_threshold', np.int64(18)), ('max_rewardless_steps', np.int64(116)), ('coordination_factor', 0.1), ('continuation_probability', 0.289677161118806)]
-    ## new
-    # "all": [('acceptance_threshold', 1.1539105136226646), ('orthodox_novelty_threshold', 0.578552564431533), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(17)), ('max_rewardless_steps', np.int64(128)), ('coordination_factor', 0.1), ('continuation_probability', 0.2)]
-    ## homogenous:
-    # "all": [('acceptance_threshold', 1.3452738347320163), ('orthodox_novelty_threshold', 0.7390895253057179), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(50)), ('max_rewardless_steps', np.int64(118)), ('coordination_factor', 0.1), ('continuation_probability', 0.593499833132961)]
-    ## heterogenous
     "all":[('acceptance_threshold', 1.2110517170409714), ('orthodox_novelty_threshold', 0.15), ('careerist_prestige_threshold', 0.6), ('mass_producer_effort_threshold', np.int64(17)), ('max_rewardless_steps', np.int64(84)), ('coordination_factor', 0.1), ('continuation_probability', 0.28098555154267013)]
 }
 REWARD_TYPE = "all"
@@ -385,3 +464,4 @@ if __name__ == "__main__":
     cp["log_prefix"] = "careerist_vs_random"
     run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(30), n_workers=30, distribution_modes=["multiply"])
     ### python run_policy_simulation.py  95226.26s user 158.33s system 2534% cpu 1:02:43.74 total
+    save_results()
