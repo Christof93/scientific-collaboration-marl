@@ -1,9 +1,9 @@
 # Scientific Knowledge Production Simulation
 
-A multi-agent reinforcement-learning simulation of scientific knowledge production. Agents with different behavioural archetypes (careerist, orthodox scientist, mass producer) form peer groups, collaborate on projects, and accumulate rewards under configurable incentive structures.
+A multi-agent reinforcement-learning simulation of scientific knowledge production. Agents with different behavioural archetypes (careerist, orthodox scientist, mass producer, plus random and adverse strategies for experiments) form peer groups, collaborate on projects, and accumulate rewards under configurable incentive structures.
 
 ## Prerequisites
-- Python 3.9+
+- Python 3.12+
 - Use a virtual environment and install dependencies:
 
 ```bash
@@ -25,6 +25,7 @@ pip install -r requirements.txt
 ├── run_policy_simulation.py      # Main simulation runner
 ├── calibrate.py                  # Bayesian calibration & Sobol sensitivity analysis
 ├── experiment_tipping_points.py  # Degenerate strategy experiment
+├── plot_tipping_points.py        # Summary figure for the tipping-point experiment
 ├── process_results.py            # Post-processing of simulation logs
 ├── stats_tracker.py              # Per-step statistics collection
 ├── log_simulation.py             # JSONL logging helpers
@@ -33,15 +34,15 @@ pip install -r requirements.txt
 └── results/                      # Pre-computed results for reproducing figures
 ```
 
-## Run the Simulation (~30')
+## Run the Simulation (~5 h)
 
-The default entry point runs **parallel simulations** across 10 random seeds for three reward types (`reputation`, `raw_pubcount`, `h_index`) using the calibrated parameters and the `multiply` reward distribution mode.
+The default entry point runs **parallel simulations** across 30 random seeds for three reward types (`reputation`, `raw_pubcount`, `h_index`) plus the combined (`all`) reward type, using the calibrated parameters and the `multiply` reward distribution mode. A final `save_results()` step aggregates the logs into the parquet files in `results/`.
 
 ```bash
 python run_policy_simulation.py
 ```
 
-This launches up to 10 parallel workers per reward type. Each run creates the following output files in `log/`:
+This launches 30 parallel workers per reward type. Each run creates the following output files in `log/`:
 
 | File | Contents |
 |------|----------|
@@ -55,19 +56,19 @@ Additionally, a `careerist_vs_random` scenario is run for the combined (`all`) r
 
 Edit the `if __name__ == "__main__"` block in `run_policy_simulation.py`, or call `run_simulation_with_policies(...)` directly. Key parameters:
 
-| Parameter | Default | Description |
+| Parameter | Batch value | Description |
 |-----------|---------|-------------|
 | `n_agents` | 3000 | Maximum agent pool size |
 | `start_agents` | 200 | Agents active at step 0 |
 | `max_steps` | 600 | Simulation length |
 | `n_groups` | 20 | Number of peer groups |
-| `max_peer_group_size` | 150 | Max agents per peer group |
+| `max_peer_group_size` | 150 | Max agents per peer group (env clamps to the initial group size) |
 | `policy_distribution` | equal thirds | Dict mapping policy names to proportions |
 | `reward_type` | `"all"` | `"reputation"`, `"h_index"`, `"raw_pubcount"`, or `"all"` |
 | `distribution_mode` | `"multiply"` | How rewards are split: `"multiply"`, `"evenly"`, or `"by_effort"` |
-| `seed` | 42 | Random seed |
+| `seed` | 0–29 | Random seed |
 
-Predefined policy mixes are available in `POLICY_CONFIGS` at the top of the file.
+Predefined policy mixes are available in `POLICY_CONFIGS` at the top of the file. (The function signature defaults in `run_simulation_with_policies` are smaller — 100 agents, 1000 steps, 60 start, 8 groups; the parallel batch worker overrides them with the values above.)
 
 ## Run Sensitivity (~12h) and Calibration (~12h)
 
@@ -79,35 +80,36 @@ python calibrate.py
 
 The script performs multi-seed Bayesian optimisation (5 seeds per evaluation) with a variance penalty to find robust parameter settings. Results are printed as a `CALIBRATED_PARAMS` dict that can be pasted into `run_policy_simulation.py`.
 
-## Run the Tipping-Point Experiment (~30')
+## Run the Tipping-Point Experiment (~12h)
 
-The tipping-point experiment sweeps the proportion of **adverse agents** from 0% to 100% (in 5% increments) and measures how societal outcomes degrade. It runs for three reward types (`reputation`, `raw_pubcount`, `h_index`), using the calibrated parameters.
+The tipping-point experiment sweeps the proportion of **adverse agents** from 5% to 95% (in 5% increments) and measures how societal outcomes degrade. It runs for three reward types (`reputation`, `raw_pubcount`, `h_index`), using the calibrated parameters.
 
 ```bash
-python experiment_tipping_points.py
+TIPPING_POINT_DRY_RUN=false python experiment_tipping_points.py
 ```
 
-- Launches **21 simulations per reward type** (63 total) in parallel using `ProcessPoolExecutor`.
-- Each simulation uses 3000 agents, 600 steps, 20 homogeneous peer groups.
+- Launches **570 simulations per reward type** (19 proportions × 30 seeds; 1,710 total) in parallel using `ProcessPoolExecutor`.
+- Each simulation uses 1000 agents, 600 steps, 20 homogeneous peer groups.
 - The adverse agent proportion replaces equal shares of the three regular archetypes.
+- Without `TIPPING_POINT_DRY_RUN=false`, the script only runs a 2-proportion, 1-seed dry run.
 
 ### Output
 
-Results are saved to `log/`:
+Results are saved to `results/`:
 
 | File | Contents |
 |------|----------|
-| `log/tipping_point_experiment_reputation_results.json` | Per-proportion summary for reputation reward |
-| `log/tipping_point_experiment_raw_pubcount_results.json` | Per-proportion summary for pubcount reward |
-| `log/tipping_point_experiment_h_index_results.json` | Per-proportion summary for h-index reward |
+| `results/tipping_point_experiment_reputation_results.json` | Per-proportion summary for reputation reward |
+| `results/tipping_point_experiment_raw_pubcount_results.json` | Per-proportion summary for pubcount reward |
+| `results/tipping_point_experiment_h_index_results.json` | Per-proportion summary for h-index reward |
 
-Each JSON file contains an array of objects with:
-- `adverse_proportion` — fraction of adverse agents (0.0–1.0)
-- `total_societal_value`, `total_rewards_distributed`, `successful_projects_count`
-- `total_terminations`, `avg_agent_age`, `success_rate`
-- `final_populations` — surviving population by archetype
+Each JSON file contains an array of objects with seed-averaged values (30 seeds each):
+- `adverse_proportion` — fraction of adverse agents (0.05–0.95)
+- `mean_total_societal_value`, `mean_total_rewards_distributed`, `mean_successful_projects_count`
+- `mean_total_terminations`, `mean_avg_agent_age`, `mean_success_rate` (each with a `std_` counterpart)
+- `final_populations_mean` / `final_populations_std` — surviving population by archetype
 
-Visualise results with `visualize_tipping_points.ipynb`.
+Plot the summary figure with `visualize_tipping_points.ipynb`.
 
 ## Agent Policies (in `agent_policies.py`)
 
@@ -132,7 +134,7 @@ Visualise results with `visualize_tipping_points.ipynb`.
 
 ### Process Results
 
-Aggregate simulation logs into per-archetype reward summaries (requires completed simulation runs for all 10 seeds) or reproduce figures from pre-computed results in `results/`:
+Aggregate simulation logs into per-archetype reward summaries (requires completed simulation runs for all 30 seeds) or reproduce figures from pre-computed results in `results/`:
 
 - `visualizations_summary_plots.ipynb` — summary statistics and reward distributions
 - `visualizations_reward_type.ipynb` — reward-type comparison plots
@@ -147,7 +149,7 @@ python make_sensitivity_table.py
 ```
 
 ## Tips
-- Simulations are CPU-intensive; a machine with ≥ 10 cores is recommended for the full parallel runs.
+- Simulations are CPU-intensive; a machine with ≥ 30 cores is recommended for the full parallel runs.
 - JSONL logs can be large; use `jq`, `tail -f`, or sample lines.
 - Commit parameter changes alongside their summary files for reproducibility.
 - to reproduce figure from saved files make sure not to run the second cell in the first two notebooks
