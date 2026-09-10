@@ -81,11 +81,11 @@ def run_experiment_step(args):
     output_prefix = f"tipping_point_adverse_{adverse_prop:.2f}_{reward_type}_seed{seed}"
 
     result = run_simulation_with_policies(
-        n_agents=2_000,
+        n_agents=1_000,
         start_agents=200,
         max_steps=600,
         n_groups=20,
-        max_peer_group_size=150,
+        max_peer_group_size=50,
         policy_distribution=policy_dist,
         output_file_prefix=output_prefix,
         group_policy_homogenous=True,
@@ -156,7 +156,7 @@ def main():
 
         averaged_results.sort(key=lambda x: x["adverse_proportion"])
 
-        output_file = f"log/tipping_point_experiment_{reward_type}_results.json"
+        output_file = f"results/tipping_point_experiment_{reward_type}_results.json"
         with open(output_file, "w") as f:
             json.dump(averaged_results, f, indent=2)
 

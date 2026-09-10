@@ -1,0 +1,522 @@
+[
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 286.0947743441274,
+    "std_total_societal_value": 125.8576421774343,
+    "mean_total_rewards_distributed": 2147.3148465367976,
+    "std_total_rewards_distributed": 438.1863059408428,
+    "mean_successful_projects_count": 934.8,
+    "std_successful_projects_count": 106.6490818838431,
+    "mean_total_terminations": 823.9333333333333,
+    "std_total_terminations": 25.713723097901546,
+    "mean_avg_agent_age": 96.80056666666668,
+    "std_avg_agent_age": 1.9669886575394617,
+    "mean_success_rate": 0.39922914996823294,
+    "std_success_rate": 0.03830954619911062,
+    "final_populations_mean": {
+      "adverse": 0.13333333333333333,
+      "careerist": 0.43333333333333335,
+      "mass_producer": 65.6,
+      "orthodox_scientist": 17.7
+    },
+    "final_populations_std": {
+      "adverse": 0.33993463423951903,
+      "careerist": 0.6674994798166928,
+      "mass_producer": 6.499230723708769,
+      "orthodox_scientist": 10.539291563794345
+    },
+    "adverse_proportion": 0.05
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 289.53031734599847,
+    "std_total_societal_value": 134.72783248081754,
+    "mean_total_rewards_distributed": 2162.111523106389,
+    "std_total_rewards_distributed": 491.822220442045,
+    "mean_successful_projects_count": 932.7333333333333,
+    "std_successful_projects_count": 115.9163299779438,
+    "mean_total_terminations": 844.0666666666667,
+    "std_total_terminations": 34.70632347121904,
+    "mean_avg_agent_age": 98.27046666666666,
+    "std_avg_agent_age": 3.1366584420721075,
+    "mean_success_rate": 0.3917724431599147,
+    "std_success_rate": 0.040637019951408046,
+    "final_populations_mean": {
+      "adverse": 2.0,
+      "careerist": 0.1,
+      "mass_producer": 62.2,
+      "orthodox_scientist": 16.933333333333334
+    },
+    "final_populations_std": {
+      "adverse": 4.844240566555986,
+      "careerist": 0.3,
+      "mass_producer": 8.443537963042113,
+      "orthodox_scientist": 9.885792274212971
+    },
+    "adverse_proportion": 0.1
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 282.2428066605413,
+    "std_total_societal_value": 109.57422481355266,
+    "mean_total_rewards_distributed": 1995.74003310432,
+    "std_total_rewards_distributed": 416.54168115964444,
+    "mean_successful_projects_count": 871.0,
+    "std_successful_projects_count": 97.27486828569855,
+    "mean_total_terminations": 841.9666666666667,
+    "std_total_terminations": 27.118853630310817,
+    "mean_avg_agent_age": 94.40883333333333,
+    "std_avg_agent_age": 3.3901866721793095,
+    "mean_success_rate": 0.37681102306792813,
+    "std_success_rate": 0.03182418269034479,
+    "final_populations_mean": {
+      "adverse": 4.433333333333334,
+      "careerist": 0.26666666666666666,
+      "mass_producer": 55.36666666666667,
+      "orthodox_scientist": 9.4
+    },
+    "final_populations_std": {
+      "adverse": 5.457003654835581,
+      "careerist": 0.5120763831912405,
+      "mass_producer": 4.460817065167422,
+      "orthodox_scientist": 7.03609740315373
+    },
+    "adverse_proportion": 0.15
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 284.2485484639975,
+    "std_total_societal_value": 120.0548985583432,
+    "mean_total_rewards_distributed": 1940.137675584415,
+    "std_total_rewards_distributed": 361.91068218739747,
+    "mean_successful_projects_count": 847.5666666666667,
+    "std_successful_projects_count": 90.34403995591272,
+    "mean_total_terminations": 846.6333333333333,
+    "std_total_terminations": 25.474802365387557,
+    "mean_avg_agent_age": 95.4456,
+    "std_avg_agent_age": 3.78107210193088,
+    "mean_success_rate": 0.36496096058280175,
+    "std_success_rate": 0.03172593317547883,
+    "final_populations_mean": {
+      "adverse": 5.8,
+      "careerist": 0.23333333333333334,
+      "mass_producer": 55.2,
+      "orthodox_scientist": 14.233333333333333
+    },
+    "final_populations_std": {
+      "adverse": 6.310837239754062,
+      "careerist": 0.4229525846816506,
+      "mass_producer": 5.160103358137962,
+      "orthodox_scientist": 9.718310324102413
+    },
+    "adverse_proportion": 0.2
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 281.3329505851654,
+    "std_total_societal_value": 115.29458030179563,
+    "mean_total_rewards_distributed": 1904.067876027452,
+    "std_total_rewards_distributed": 377.33075144084177,
+    "mean_successful_projects_count": 851.6,
+    "std_successful_projects_count": 93.97290389610544,
+    "mean_total_terminations": 867.2666666666667,
+    "std_total_terminations": 20.92356459964591,
+    "mean_avg_agent_age": 96.59496666666665,
+    "std_avg_agent_age": 2.8864701105136867,
+    "mean_success_rate": 0.35713468606253934,
+    "std_success_rate": 0.037026230493928954,
+    "final_populations_mean": {
+      "adverse": 7.533333333333333,
+      "careerist": 0.16666666666666666,
+      "mass_producer": 54.2,
+      "orthodox_scientist": 9.666666666666666
+    },
+    "final_populations_std": {
+      "adverse": 7.107429602574728,
+      "careerist": 0.37267799624996495,
+      "mass_producer": 5.804595880277398,
+      "orthodox_scientist": 7.951240294584374
+    },
+    "adverse_proportion": 0.25
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 290.4651540077167,
+    "std_total_societal_value": 119.34030414580388,
+    "mean_total_rewards_distributed": 1773.4334319168543,
+    "std_total_rewards_distributed": 417.603309398531,
+    "mean_successful_projects_count": 792.1333333333333,
+    "std_successful_projects_count": 97.47571777399514,
+    "mean_total_terminations": 857.2333333333333,
+    "std_total_terminations": 24.61393011194181,
+    "mean_avg_agent_age": 93.09539999999998,
+    "std_avg_agent_age": 3.271382761667203,
+    "mean_success_rate": 0.3421940858974064,
+    "std_success_rate": 0.032360543605316976,
+    "final_populations_mean": {
+      "adverse": 7.733333333333333,
+      "careerist": 0.1,
+      "mass_producer": 45.96666666666667,
+      "orthodox_scientist": 9.533333333333333
+    },
+    "final_populations_std": {
+      "adverse": 6.8795994715454825,
+      "careerist": 0.30000000000000004,
+      "mass_producer": 2.903828889969624,
+      "orthodox_scientist": 8.151618789472977
+    },
+    "adverse_proportion": 0.3
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 272.5061689517596,
+    "std_total_societal_value": 112.87059498948642,
+    "mean_total_rewards_distributed": 1668.6040332541477,
+    "std_total_rewards_distributed": 364.7308407478801,
+    "mean_successful_projects_count": 757.1,
+    "std_successful_projects_count": 95.73064643397467,
+    "mean_total_terminations": 863.4666666666667,
+    "std_total_terminations": 28.670232336383716,
+    "mean_avg_agent_age": 93.03326666666666,
+    "std_avg_agent_age": 3.140870695983661,
+    "mean_success_rate": 0.33218011554091753,
+    "std_success_rate": 0.03442948073482188,
+    "final_populations_mean": {
+      "adverse": 10.9,
+      "careerist": 0.06666666666666667,
+      "mass_producer": 43.666666666666664,
+      "orthodox_scientist": 10.433333333333334
+    },
+    "final_populations_std": {
+      "adverse": 9.961090971039937,
+      "careerist": 0.24944382578492943,
+      "mass_producer": 4.742245131674331,
+      "orthodox_scientist": 9.279667139624257
+    },
+    "adverse_proportion": 0.35
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 294.7228184835171,
+    "std_total_societal_value": 140.05119518511663,
+    "mean_total_rewards_distributed": 1726.3070518452666,
+    "std_total_rewards_distributed": 483.92217159880107,
+    "mean_successful_projects_count": 794.3,
+    "std_successful_projects_count": 114.48992677669654,
+    "mean_total_terminations": 883.2333333333333,
+    "std_total_terminations": 27.294301399539226,
+    "mean_avg_agent_age": 95.40986666666667,
+    "std_avg_agent_age": 4.156528092317218,
+    "mean_success_rate": 0.3305019974241807,
+    "std_success_rate": 0.039662479543691766,
+    "final_populations_mean": {
+      "adverse": 13.166666666666666,
+      "careerist": 0.06666666666666667,
+      "mass_producer": 43.03333333333333,
+      "orthodox_scientist": 7.666666666666667
+    },
+    "final_populations_std": {
+      "adverse": 9.72996517065823,
+      "careerist": 0.24944382578492943,
+      "mass_producer": 6.5548116338729026,
+      "orthodox_scientist": 6.982517852147286
+    },
+    "adverse_proportion": 0.39999999999999997
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 305.11479027208253,
+    "std_total_societal_value": 132.46925276635966,
+    "mean_total_rewards_distributed": 1761.8656626129412,
+    "std_total_rewards_distributed": 438.49485759645466,
+    "mean_successful_projects_count": 785.4666666666667,
+    "std_successful_projects_count": 113.49529603566053,
+    "mean_total_terminations": 882.8333333333334,
+    "std_total_terminations": 33.128118301862884,
+    "mean_avg_agent_age": 95.97993333333334,
+    "std_avg_agent_age": 2.9963753095290913,
+    "mean_success_rate": 0.33232519849752806,
+    "std_success_rate": 0.04100703978388451,
+    "final_populations_mean": {
+      "adverse": 21.633333333333333,
+      "careerist": 0.13333333333333333,
+      "mass_producer": 42.3,
+      "orthodox_scientist": 4.966666666666667
+    },
+    "final_populations_std": {
+      "adverse": 13.47215234804331,
+      "careerist": 0.42687494916218993,
+      "mass_producer": 6.870953354520753,
+      "orthodox_scientist": 5.009879129169574
+    },
+    "adverse_proportion": 0.44999999999999996
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 288.17194274753587,
+    "std_total_societal_value": 124.1994134460966,
+    "mean_total_rewards_distributed": 1537.5338297160813,
+    "std_total_rewards_distributed": 415.2423412992121,
+    "mean_successful_projects_count": 696.8333333333334,
+    "std_successful_projects_count": 117.54292360192888,
+    "mean_total_terminations": 881.1333333333333,
+    "std_total_terminations": 29.85155867882874,
+    "mean_avg_agent_age": 91.79263333333331,
+    "std_avg_agent_age": 4.381610012186031,
+    "mean_success_rate": 0.30605873876169754,
+    "std_success_rate": 0.038911226538587314,
+    "final_populations_mean": {
+      "adverse": 20.566666666666666,
+      "careerist": 0.06666666666666667,
+      "mass_producer": 34.733333333333334,
+      "orthodox_scientist": 3.933333333333333
+    },
+    "final_populations_std": {
+      "adverse": 13.134390820370095,
+      "careerist": 0.24944382578492943,
+      "mass_producer": 3.6141696449146137,
+      "orthodox_scientist": 5.6031737038535185
+    },
+    "adverse_proportion": 0.49999999999999994
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 271.74851235979855,
+    "std_total_societal_value": 113.3434915042121,
+    "mean_total_rewards_distributed": 1430.0951729136918,
+    "std_total_rewards_distributed": 335.72642441445873,
+    "mean_successful_projects_count": 671.7666666666667,
+    "std_successful_projects_count": 103.82089813177734,
+    "mean_total_terminations": 889.5333333333333,
+    "std_total_terminations": 42.84525126026869,
+    "mean_avg_agent_age": 92.7116,
+    "std_avg_agent_age": 3.9766205049011156,
+    "mean_success_rate": 0.29479890978421314,
+    "std_success_rate": 0.03270600547549224,
+    "final_populations_mean": {
+      "adverse": 25.066666666666666,
+      "careerist": 0.06666666666666667,
+      "mass_producer": 33.06666666666667,
+      "orthodox_scientist": 5.066666666666666
+    },
+    "final_populations_std": {
+      "adverse": 18.395530858215416,
+      "careerist": 0.24944382578492943,
+      "mass_producer": 3.714236873915765,
+      "orthodox_scientist": 5.626919425602451
+    },
+    "adverse_proportion": 0.5499999999999999
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 286.6013334269684,
+    "std_total_societal_value": 124.74512748717515,
+    "mean_total_rewards_distributed": 1473.8406362108735,
+    "std_total_rewards_distributed": 437.96789175217356,
+    "mean_successful_projects_count": 679.2333333333333,
+    "std_successful_projects_count": 123.13073900894481,
+    "mean_total_terminations": 918.4,
+    "std_total_terminations": 34.141470384270214,
+    "mean_avg_agent_age": 93.56853333333335,
+    "std_avg_agent_age": 4.329274933391144,
+    "mean_success_rate": 0.29020967502832445,
+    "std_success_rate": 0.04080287348132352,
+    "final_populations_mean": {
+      "adverse": 21.6,
+      "careerist": 0.03333333333333333,
+      "mass_producer": 30.633333333333333,
+      "orthodox_scientist": 2.566666666666667
+    },
+    "final_populations_std": {
+      "adverse": 15.585463312544375,
+      "careerist": 0.1795054935711501,
+      "mass_producer": 6.940140888739619,
+      "orthodox_scientist": 3.720961643924263
+    },
+    "adverse_proportion": 0.6
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 298.2893057852553,
+    "std_total_societal_value": 111.48782307887416,
+    "mean_total_rewards_distributed": 1514.7106941605753,
+    "std_total_rewards_distributed": 406.4833017287492,
+    "mean_successful_projects_count": 685.4666666666667,
+    "std_successful_projects_count": 108.2905761776568,
+    "mean_total_terminations": 915.0333333333333,
+    "std_total_terminations": 33.43499497366328,
+    "mean_avg_agent_age": 94.19326666666666,
+    "std_avg_agent_age": 4.704146277015155,
+    "mean_success_rate": 0.29322924488408675,
+    "std_success_rate": 0.038397259748684735,
+    "final_populations_mean": {
+      "adverse": 29.433333333333334,
+      "careerist": 0.03333333333333333,
+      "mass_producer": 28.733333333333334,
+      "orthodox_scientist": 2.4
+    },
+    "final_populations_std": {
+      "adverse": 17.35834733556804,
+      "careerist": 0.17950549357115012,
+      "mass_producer": 6.627887211539503,
+      "orthodox_scientist": 3.3126021996812915
+    },
+    "adverse_proportion": 0.65
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 281.574366882287,
+    "std_total_societal_value": 107.0923496089228,
+    "mean_total_rewards_distributed": 1222.8516396985035,
+    "std_total_rewards_distributed": 371.8078326843993,
+    "mean_successful_projects_count": 595.1,
+    "std_successful_projects_count": 110.60058770187436,
+    "mean_total_terminations": 914.6,
+    "std_total_terminations": 34.25161796664989,
+    "mean_avg_agent_age": 90.03943333333333,
+    "std_avg_agent_age": 4.3581405108397115,
+    "mean_success_rate": 0.2613518607123364,
+    "std_success_rate": 0.04231938570113967,
+    "final_populations_mean": {
+      "adverse": 29.766666666666666,
+      "mass_producer": 21.733333333333334,
+      "orthodox_scientist": 1.6
+    },
+    "final_populations_std": {
+      "adverse": 17.060057313958694,
+      "mass_producer": 5.072365216433935,
+      "orthodox_scientist": 2.8472208672083497
+    },
+    "adverse_proportion": 0.7
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 321.57977346662545,
+    "std_total_societal_value": 135.0573078442547,
+    "mean_total_rewards_distributed": 1361.2191268257072,
+    "std_total_rewards_distributed": 427.86042480763825,
+    "mean_successful_projects_count": 631.1,
+    "std_successful_projects_count": 124.72913319135455,
+    "mean_total_terminations": 915.3666666666667,
+    "std_total_terminations": 39.94286196834451,
+    "mean_avg_agent_age": 92.43526666666665,
+    "std_avg_agent_age": 4.49427185005783,
+    "mean_success_rate": 0.2727904456387134,
+    "std_success_rate": 0.041770362227213656,
+    "final_populations_mean": {
+      "adverse": 36.86666666666667,
+      "mass_producer": 20.6,
+      "orthodox_scientist": 2.033333333333333
+    },
+    "final_populations_std": {
+      "adverse": 19.099272819199747,
+      "mass_producer": 5.771192828754439,
+      "orthodox_scientist": 2.575310121562493
+    },
+    "adverse_proportion": 0.75
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 292.1497421502742,
+    "std_total_societal_value": 107.82176892538521,
+    "mean_total_rewards_distributed": 1226.1951288303826,
+    "std_total_rewards_distributed": 351.3604664368577,
+    "mean_successful_projects_count": 594.6,
+    "std_successful_projects_count": 99.26953208311198,
+    "mean_total_terminations": 935.1,
+    "std_total_terminations": 35.28110920402967,
+    "mean_avg_agent_age": 91.58423333333334,
+    "std_avg_agent_age": 3.8902605455447623,
+    "mean_success_rate": 0.2558177631743851,
+    "std_success_rate": 0.034898214213503385,
+    "final_populations_mean": {
+      "adverse": 31.7,
+      "mass_producer": 16.333333333333332,
+      "orthodox_scientist": 0.8666666666666667
+    },
+    "final_populations_std": {
+      "adverse": 19.07380402541664,
+      "mass_producer": 5.491407429389624,
+      "orthodox_scientist": 2.1868292622475627
+    },
+    "adverse_proportion": 0.7999999999999999
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 296.2486125649058,
+    "std_total_societal_value": 103.96050354011219,
+    "mean_total_rewards_distributed": 1133.0652446253312,
+    "std_total_rewards_distributed": 302.63210994966767,
+    "mean_successful_projects_count": 589.6333333333333,
+    "std_successful_projects_count": 90.34175237520148,
+    "mean_total_terminations": 928.8,
+    "std_total_terminations": 36.90293574590871,
+    "mean_avg_agent_age": 91.19423333333333,
+    "std_avg_agent_age": 3.7837594064046343,
+    "mean_success_rate": 0.253318056425264,
+    "std_success_rate": 0.03648202516887883,
+    "final_populations_mean": {
+      "adverse": 41.96666666666667,
+      "mass_producer": 7.866666666666666,
+      "orthodox_scientist": 0.5
+    },
+    "final_populations_std": {
+      "adverse": 20.25583592175077,
+      "mass_producer": 3.4518915909332315,
+      "orthodox_scientist": 1.1474609652039003
+    },
+    "adverse_proportion": 0.85
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 287.50134610214013,
+    "std_total_societal_value": 109.53681409078364,
+    "mean_total_rewards_distributed": 1026.3220081270351,
+    "std_total_rewards_distributed": 328.39575579182764,
+    "mean_successful_projects_count": 513.7333333333333,
+    "std_successful_projects_count": 109.56487677272412,
+    "mean_total_terminations": 922.1666666666666,
+    "std_total_terminations": 42.2745655079847,
+    "mean_avg_agent_age": 88.93906666666666,
+    "std_avg_agent_age": 4.665784563774409,
+    "mean_success_rate": 0.2255171324123401,
+    "std_success_rate": 0.042047593091207175,
+    "final_populations_mean": {
+      "adverse": 45.9,
+      "mass_producer": 8.233333333333333,
+      "orthodox_scientist": 0.2
+    },
+    "final_populations_std": {
+      "adverse": 23.38710470893451,
+      "mass_producer": 3.8874441760907925,
+      "orthodox_scientist": 0.6
+    },
+    "adverse_proportion": 0.9
+  },
+  {
+    "seed_count": 30,
+    "mean_total_societal_value": 259.01372688097746,
+    "std_total_societal_value": 98.12702920814417,
+    "mean_total_rewards_distributed": 793.0662674126835,
+    "std_total_rewards_distributed": 263.63711030687375,
+    "mean_successful_projects_count": 453.8666666666667,
+    "std_successful_projects_count": 115.67821268021427,
+    "mean_total_terminations": 942.7,
+    "std_total_terminations": 38.552258904851044,
+    "mean_avg_agent_age": 86.31533333333331,
+    "std_avg_agent_age": 5.2635796142507,
+    "mean_success_rate": 0.20629826401916201,
+    "std_success_rate": 0.04404613166770922,
+    "final_populations_mean": {
+      "adverse": 39.166666666666664,
+      "mass_producer": 1.2666666666666666,
+      "orthodox_scientist": 0.13333333333333333
+    },
+    "final_populations_std": {
+      "adverse": 23.68133348347503,
+      "mass_producer": 1.4590712418826193,
+      "orthodox_scientist": 0.49888765156985887
+    },
+    "adverse_proportion": 0.95
+  }
+]

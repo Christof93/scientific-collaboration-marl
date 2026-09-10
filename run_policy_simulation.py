@@ -463,5 +463,5 @@ if __name__ == "__main__":
     }
     cp["log_prefix"] = "careerist_vs_random"
     run_all_reward_functions(cp, r_type = REWARD_TYPE, seeds=range(30), n_workers=30, distribution_modes=["multiply"])
-    ### python run_policy_simulation.py  95226.26s user 158.33s system 2534% cpu 1:02:43.74 total
     save_results()
+    ### ppython run_policy_simulation.py  135827.16s user 1210.73s system 751% cpu 5:04:04.14 total
