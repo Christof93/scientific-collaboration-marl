@@ -147,7 +147,7 @@ class Area:
                     if xmin <= px <= xmax and ymin <= py <= ymax:
                         category_points[cat].append((px, py))
 
-                cmap = plt.cm.get_cmap("tab10", len(category_points))
+                cmap = plt.colormaps.get_cmap("tab10", len(category_points))
                 for i, (cat, pts) in enumerate(category_points.items()):
                     xs, ys = zip(*pts)
                     plt.scatter(
